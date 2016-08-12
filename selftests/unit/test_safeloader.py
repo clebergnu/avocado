@@ -72,6 +72,28 @@ class DocstringTag(unittest.TestCase):
         self.assertFalse(safeloader.is_docstring_tag_disable(":AVOCADO: DISABLE"))
         self.assertFalse(safeloader.is_docstring_tag_disable(":avocado: disabled"))
 
+    def test_is_tag(self):
+        self.assertTrue(safeloader.is_docstring_test_tag(":avocado: tag=fast"))
+        self.assertTrue(safeloader.is_docstring_test_tag(":avocado:\ttag=FAST"))
+        self.assertTrue(safeloader.is_docstring_test_tag(":avocado: tag="))
+        self.assertFalse(safeloader.is_docstring_test_tag(":AVOCADO: TAG:FAST"))
+        self.assertFalse(safeloader.is_docstring_test_tag(":avocado: mytag=fast"))
+        self.assertFalse(safeloader.is_docstring_test_tag(":avocado: tag"))
+
+    def test_get_tag(self):
+        self.assertEqual(safeloader.get_docstring_test_tag(":avocado: tag=fast"),
+                         "fast")
+        self.assertEqual(safeloader.get_docstring_test_tag(":avocado:\ttag=FAST"),
+                         "FAST")
+        self.assertEqual(safeloader.get_docstring_test_tag(":avocado: tag="),
+                         "")
+        self.assertEqual(safeloader.get_docstring_test_tag(":AVOCADO: TAG:FAST"),
+                         None)
+        self.assertEqual(safeloader.get_docstring_test_tag(":avocado: mytag=fast"),
+                         None)
+        self.assertFalse(safeloader.get_docstring_test_tag(":avocado: tag"),
+                         None)
+
 
 class UnlimitedDiff(unittest.TestCase):
 
@@ -96,7 +118,9 @@ class FindClassAndMethods(UnlimitedDiff):
             'DocstringTag': ['test_longline',
                              'test_newlines',
                              'test_enabled',
-                             'test_disabled'],
+                             'test_disabled',
+                             'test_is_tag',
+                             'test_get_tag'],
             'FindClassAndMethods': ['test_self',
                                     'test_with_pattern',
                                     'test_with_base_class',
@@ -115,7 +139,9 @@ class FindClassAndMethods(UnlimitedDiff):
             'DocstringTag': ['test_longline',
                              'test_newlines',
                              'test_enabled',
-                             'test_disabled'],
+                             'test_disabled',
+                             'test_is_tag',
+                             'test_get_tag'],
             'FindClassAndMethods': ['test_self',
                                     'test_with_pattern',
                                     'test_with_base_class',
