@@ -51,6 +51,11 @@ class Run(CLICmd):
                             metavar="TEST_REFERENCE",
                             help='List of test references (aliases or paths)')
 
+        parser.add_argument("--tags", type=lambda value: value.split(","),
+                            default=[], nargs='?', metavar="TEST_TAGS",
+                            help=("List of comma separated test tags to filter"
+                                  "the tests to be run"))
+
         parser.add_argument("-d", "--dry-run", action="store_true",
                             help="Instead of running the test only "
                             "list them and log their params.")

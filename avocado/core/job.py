@@ -301,7 +301,7 @@ class Job(object):
         """
         loader.loader.load_plugins(self.args)
         try:
-            suite = loader.loader.discover(urls)
+            suite = loader.loader.discover(urls, tags=self.args.tags)
         except loader.LoaderUnhandledUrlError as details:
             self._remove_job_results()
             raise exceptions.OptionValidationError(details)

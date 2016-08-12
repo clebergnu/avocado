@@ -177,7 +177,7 @@ class TestLoaderProxy(object):
             mapping.update(loader_plugin.get_decorator_mapping())
         return mapping
 
-    def discover(self, urls, which_tests=DEFAULT):
+    def discover(self, urls, which_tests=DEFAULT, tags=[]):
         """
         Discover (possible) tests from test urls.
 
@@ -185,6 +185,8 @@ class TestLoaderProxy(object):
         :type urls: builtin.list
         :param which_tests: Limit tests to be displayed (ALL, AVAILABLE or
                             DEFAULT)
+        :param tags: list of tags that should be considered to be loaded
+        :type tags: list
         :return: A list of test factories (tuples (TestClass, test_params))
         """
         def handle_exception(plugin, details):
@@ -199,7 +201,7 @@ class TestLoaderProxy(object):
         if not urls:
             for loader_plugin in self._initialized_plugins:
                 try:
-                    tests.extend(loader_plugin.discover(None, which_tests))
+                    tests.extend(loader_plugin.discover(None, which_tests, tags=tags))
                 except Exception as details:
                     handle_exception(loader_plugin, details)
         else:
@@ -207,7 +209,7 @@ class TestLoaderProxy(object):
                 handled = False
                 for loader_plugin in self._initialized_plugins:
                     try:
-                        _test = loader_plugin.discover(url, which_tests)
+                        _test = loader_plugin.discover(url, which_tests, tags=tags)
                         if _test:
                             tests.extend(_test)
                             handled = True
@@ -430,7 +432,7 @@ class FileLoader(TestLoader):
                 test.Test: output.TERM_SUPPORT.healthy_str,
                 FilteredOut: output.TERM_SUPPORT.warn_header_str}
 
-    def discover(self, url, which_tests=DEFAULT):
+    def discover(self, url, which_tests=DEFAULT, tags=[]):
         """
         Discover (possible) tests from a directory.
 
@@ -446,7 +448,7 @@ class FileLoader(TestLoader):
                             DEFAULT)
         :return: list of matching tests
         """
-        tests = self._discover(url, which_tests)
+        tests = self._discover(url, which_tests, tags=tags)
         if self.test_type:
             mapping = self.get_type_label_mapping()
             if self.test_type == 'INSTRUMENTED':
@@ -464,7 +466,7 @@ class FileLoader(TestLoader):
                         return None
         return tests
 
-    def _discover(self, url, which_tests=DEFAULT):
+    def _discover(self, url, which_tests=DEFAULT, tags=[]):
         """
         Recursively walk in a directory and find tests params.
         The tests are returned in alphabetic order.
@@ -491,13 +493,13 @@ class FileLoader(TestLoader):
                 subtests_filter = re.compile(_subtests_filter)
 
         if not os.path.isdir(url):  # Single file
-            if (not self._make_tests(url, DEFAULT, subtests_filter) and
+            if (not self._make_tests(url, DEFAULT, subtests_filter, tags=tags) and
                     not subtests_filter):
                 split_url = shlex.split(url)
                 if (os.access(split_url[0], os.X_OK) and
                         not os.path.isdir(split_url[0])):
-                    return self._make_test(test.SimpleTest, url)
-            return self._make_tests(url, which_tests, subtests_filter)
+                    return self._make_test(test.SimpleTest, url, tags=tags)
+            return self._make_tests(url, which_tests, subtests_filter, tags=tags)
 
         tests = []
 
@@ -525,12 +527,14 @@ class FileLoader(TestLoader):
                         tests.extend(self._make_tests(pth, which_tests))
         return tests
 
-    def _find_avocado_tests(self, path):
+    def _find_avocado_tests(self, path, tags=[]):
         """
         Attempts to find Avocado instrumented tests from Python source files
 
         :param path: path to a Python source code file
         :type path: str
+        :param tags: list of tags that should be considered to be loaded
+        :type tags: list
         :returns: dictionary with class name and method names
         :rtype: dict
         """
@@ -574,6 +578,12 @@ class FileLoader(TestLoader):
             # Looking for a 'class Anything(anything):'
             elif isinstance(statement, ast.ClassDef):
                 docstring = ast.get_docstring(statement)
+                # Look for ":avocado: tag=category"
+                if tags:
+                    tag = safeloader.get_docstring_test_tag(docstring)
+                    if tag not in tags:
+                        continue
+
                 # Looking for a class that has in the docstring either
                 # ":avocado: enable" or ":avocado: disable
                 if safeloader.is_docstring_tag_disable(docstring):
@@ -613,11 +623,11 @@ class FileLoader(TestLoader):
         return result
 
     def _make_avocado_tests(self, test_path, make_broken, subtests_filter,
-                            test_name=None):
+                            test_name=None, tags=[]):
         if test_name is None:
             test_name = test_path
         try:
-            tests = self._find_avocado_tests(test_path)
+            tests = self._find_avocado_tests(test_path, tags=tags)
             if tests:
                 test_factories = []
                 for test_class, test_methods in tests.items():
@@ -665,7 +675,7 @@ class FileLoader(TestLoader):
         """
         return [(klass, {'name': uid})]
 
-    def _make_tests(self, test_path, list_non_tests, subtests_filter=None):
+    def _make_tests(self, test_path, list_non_tests, subtests_filter=None, tags=[]):
         """
         Create test templates from given path
         :param test_path: File system path
@@ -687,7 +697,8 @@ class FileLoader(TestLoader):
             path_analyzer = path.PathInspector(test_path)
             if path_analyzer.is_python():
                 return self._make_avocado_tests(test_path, make_broken,
-                                                subtests_filter)
+                                                subtests_filter,
+                                                tags=tags)
             else:
                 if os.access(test_path, os.X_OK):
                     return self._make_test(test.SimpleTest,
@@ -706,7 +717,8 @@ class FileLoader(TestLoader):
             test_path = os.path.join(data_dir.get_test_dir(), test_name)
             if os.path.exists(test_path):
                 return self._make_avocado_tests(test_path, make_broken,
-                                                subtests_filter, test_name)
+                                                subtests_filter, test_name,
+                                                tags=tags)
             else:
                 if not subtests_filter and ':' in test_name:
                     test_name, subtests_filter = test_name.split(':', 1)
@@ -716,7 +728,8 @@ class FileLoader(TestLoader):
                         subtests_filter = re.compile(subtests_filter)
                         return self._make_avocado_tests(test_path, make_broken,
                                                         subtests_filter,
-                                                        test_name)
+                                                        test_name,
+                                                        tags=tags)
                     else:
                         return make_broken(test.MissingTest, test_name)
 
@@ -777,7 +790,7 @@ class ExternalLoader(TestLoader):
             raise LoaderError(msg)
         return None  # Skip external runner
 
-    def discover(self, url, which_tests=DEFAULT):
+    def discover(self, url, which_tests=DEFAULT, tags=[]):
         """
         :param url: arguments passed to the external_runner
         :param which_tests: Limit tests to be displayed (ALL, AVAILABLE or
