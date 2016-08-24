@@ -52,7 +52,6 @@ from ..utils import runtime
 from ..utils import stacktrace
 from ..utils import data_structures
 
-
 try:
     from . import html
     HTML_REPORT_SUPPORT = html.check_resource_requirements()
@@ -500,9 +499,6 @@ class Job(object):
         if self.status == 'RUNNING':
             self.status = 'PASS'
         # Let's clean up test artifacts
-        if getattr(self.args, 'archive', False):
-            filename = self.logdir + '.zip'
-            archive.create(filename, self.logdir)
         _TEST_LOGGER.info('Test results available in %s', self.logdir)
 
         if summary is None:
@@ -514,7 +510,26 @@ class Job(object):
         if 'FAIL' in summary:
             self.exitcode |= exit_codes.AVOCADO_TESTS_FAIL
 
+        self._post_run()
         return self.exitcode
+
+    def _post_run(self):
+        """
+        Kick results plugins, and generate archive
+        """
+        result_dispatcher = dispatcher.ResultDispatcher()
+        if result_dispatcher.extensions:
+            # At this point job_instance doesn't have a single results attribute
+            # which is the end goal.  For now, we pick any of the plugin classes
+            # added to the result proxy.
+            if len(self.result_proxy.output_plugins) > 0:
+                result = self.result_proxy.output_plugins[0]
+                result_dispatcher.map_method('render', result, self)
+
+        self.job_pre_post_dispatcher.map_methods('post', self)
+        if getattr(self.args, 'archive', False):
+            filename = self.logdir + '.zip'
+            archive.create(filename, self.logdir)
 
     def run(self):
         """
@@ -564,7 +579,6 @@ class Job(object):
             self.exitcode |= exit_codes.AVOCADO_FAIL
             return self.exitcode
         finally:
-            self.job_pre_post_dispatcher.map_methods('post', self)
             if not settings.get_value('runner.behavior', 'keep_tmp_files',
                                       key_type=bool, default=False):
                 data_dir.clean_tmp_files()
