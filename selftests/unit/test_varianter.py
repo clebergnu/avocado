@@ -39,3 +39,6 @@ class TestVarianter(unittest.TestCase):
                           "             -> key2: value2\n\n"
                           "Variant 1:    /path/path1\n"
                           "Variant 2:    /path/path2\n"))
+
+    def test_len(self):
+        self.assertEqual(len(self.tree), 2)
