@@ -58,6 +58,8 @@ class TreeNode(object):
         self.children = []
         self._environment = None
         self.environment_origin = {}
+        if parent is not None:
+            parent.add_child(self)
         for child in children:
             self.add_child(child)
 
