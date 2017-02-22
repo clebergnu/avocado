@@ -46,3 +46,12 @@ class TestVarianter(unittest.TestCase):
     def test_len(self):
         mux_tree = varianter.MuxTree(self.tree)
         self.assertEqual(len(mux_tree), 2)
+
+    def test_varianter_default_params_changing_type(self):
+        # It seems inconsistent to use a dict as default_params before it's
+        # parsed.  This unittest demonstrates the change in type
+        self.assertEqual(varianter.Varianter().default_params, {})
+        self.assertEqual(self.varianter.default_params, mux.MuxTreeNode(""))
+        # More natural way to signal that default_parmas is not initialized
+        # would be to set to None, that is:
+        # self.assertIs(varianter.Varianter().default_params, None)
