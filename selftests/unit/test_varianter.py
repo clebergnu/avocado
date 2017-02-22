@@ -42,3 +42,7 @@ class TestVarianter(unittest.TestCase):
                           "Multiplex variants:\n"
                           "Variant 1:    /path/path1\n"
                           "Variant 2:    /path/path2"))
+
+    def test_len(self):
+        mux_tree = varianter.MuxTree(self.tree)
+        self.assertEqual(len(mux_tree), 2)
