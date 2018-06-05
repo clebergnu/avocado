@@ -39,11 +39,179 @@ from .download import url_download
 from .filelock import FileLock
 
 
+# FIXME: remove
+from avocado.utils.process import run
+
 log = logging.getLogger('avocado.test')
 
 
 #: The default hash algorithm to use on asset cache operations
 DEFAULT_HASH_ALGORITHM = 'sha256'
+
+
+class XZUncompressRetriever(object):
+    '''
+    This retrieves the given URL by uncompressing with xz
+    '''
+
+    def __init__(self, destination_dir=None):
+        if destination_dir is None:
+            destination_dir = tempfile.mkdtemp()
+        self.destination_dir = destination_dir
+
+    def action(self, spec):
+        # FIXME: The origin should optionally be given, either in the
+        # spec or by the pipeline runner.  This is guessing the origin
+        # name from the url
+        origin = os.path.join(self.destination_dir, spec.url)
+        if not origin.endswith('.xz'):
+            origin = "%s.xz" % origin
+        if not os.path.exists(origin):
+            return False
+
+        destination = os.path.join(self.destination_dir,
+                                   spec.url)
+        run("xz -kfd %s" % origin)
+        return True
+
+
+class GzipCompressRetriever(object):
+    '''
+    This actually *compresses* the file given with gzip
+    '''
+
+    def __init__(self, destination_dir=None):
+        if destination_dir is None:
+            destination_dir = tempfile.mkdtemp()
+        self.destination_dir = destination_dir
+
+    def action(self, spec):
+        # We should not play with the origin, this is just a hack
+        # because we're lazy and calling gzip binary which will
+        # add the .gz extension
+        origin = os.path.join(self.destination_dir, spec.url)
+        if origin.endswith('.gz'):
+            origin = origin[:-3]
+        if not os.path.exists(origin):
+            return False
+
+        destination = os.path.join(self.destination_dir,
+                                   spec.url)
+        # -n is needed because by default gzip will add a timestamp
+        # field to the resulting gzip file, changing the file content
+        # and making the expected hash fail
+        run("gzip -kn %s" % origin)
+        return True
+
+
+class UrlRetriever(object):
+
+    def __init__(self, destination_dir=None):
+        if destination_dir is None:
+            destination_dir = tempfile.mkdtemp()
+        self.destination_dir = destination_dir
+
+    def action(self, spec):
+        try:
+            path = os.path.join(self.destination_dir,
+                                os.path.basename(spec.url))
+            url_download(spec.url, path)
+        except Exception:
+            return False
+        return True
+
+
+class HashVerifier(object):
+
+    def __init__(self, destination_dir=None):
+        if destination_dir is None:
+            destination_dir = tempfile.mkdtemp()
+        self.destination_dir = destination_dir
+
+    def action(self, spec):
+        # this must match the place a retriever puts the file in
+        path = os.path.join(self.destination_dir,
+                            os.path.basename(spec.url))
+        if not os.path.exists(path):
+            return False
+        with open(path, 'rb') as retrieved_file:
+            hash_ = hashlib.new('sha1', retrieved_file.read())
+            return hash_.hexdigest() == spec.expected
+
+
+class AssetSpec(object):
+
+    def __init__(self, url, expected=None, retriever=None,
+                 verifier=None, parent=None, destination=None):
+        self.url = url
+        self.expected = expected
+        self.url_parsed = urlparse.urlparse(url)
+        # such as the file name of the resulting asset
+        self.destination = destination
+        # decide on either putting relationship in the AssetSpec themselves
+        # or let it to the pipeline runner
+        self.parent = parent
+
+        if retriever is None:
+            retriever = UrlRetriever
+        self.retriever = retriever
+        # TODO: decide on how results should be passed
+        self.retriever_result = None
+
+        if verifier is None:
+            verifier = HashVerifier
+        self.verifier = verifier
+        # TODO: decide on how results should be passed
+        self.verifier_result = None
+
+
+def pipe_runner(*asset_specs):
+    debug = True
+    target_position = len(asset_specs)
+    current_position = len(asset_specs) -1
+
+    # FIXME, or course
+    destination_dir = '/tmp'
+
+    rock_bottom = False
+    while current_position < target_position:
+        asset_spec = asset_specs[current_position]
+        retriever = asset_spec.retriever(destination_dir)
+        verifier = asset_spec.verifier(destination_dir)
+
+        if debug:
+            print('============================================')
+            print('Current position: ', current_position)
+            print(' Target position: ', target_position)
+            print('     Rock bottom: ', rock_bottom)
+            print('  Asset Spec URL: ', asset_spec.url)
+            print('============================================')
+
+        if verifier.action(asset_spec):
+            current_position += 1
+            if debug:
+                print('Verifier: position increment')
+            continue
+        else:
+            retriever.action(asset_spec)
+            if verifier.action(asset_spec):
+                current_position += 1
+                if debug:
+                    print('Retrivier+Verifier: position increment')
+                continue
+            else:
+                current_position -= 1
+                if debug:
+                    print('Position decrement')
+                # Starting from the last step in the pipeline didn't yield any
+                # benefits (there was nothing to reuse), so now there's no
+                # excuse for going back again
+                if current_position == 0:
+                    if rock_bottom:
+                        return False
+                    rock_bottom = True
+                continue
+    return True
 
 
 class UnsupportProtocolError(EnvironmentError):

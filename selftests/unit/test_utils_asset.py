@@ -132,5 +132,38 @@ class TestAsset(unittest.TestCase):
         shutil.rmtree(self.basedir)
 
 
+class SpecTest(unittest.TestCase):
+
+    def test_asset_has_retriever_and_verifier(self):
+        spec = asset.AssetSpec('https://avocado-project.org/data/assets/SHA1SUM_JEOS25')
+        self.assertIsNotNone(spec.retriever)
+        self.assertIsNotNone(spec.verifier)
+
+
+    def test_asset_retrieve(self):
+        spec = asset.AssetSpec('https://avocado-project.org/data/assets/SHA1SUM_JEOS25',
+                               expected='e6dcd507782a85738f0e258bd9d070a25f6ad71b')
+        spec.retriever().action(spec)
+        self.assertIsNotNone(spec.retriever_result)
+        spec.verifier().action(spec)
+        self.assertTrue(spec.verifier_result)
+
+class PipeRunner(unittest.TestCase):
+
+    def test_one_asset(self):
+        spec = asset.AssetSpec('https://avocado-project.org/data/assets/SHA1SUM_JEOS25',
+                               expected='e6dcd507782a85738f0e258bd9d070a25f6ad71b')
+
+        self.assertTrue(asset.pipe_runner(spec))
+
+    def test_two_assets(self):
+        plain = asset.AssetSpec('https://avocado-project.org/data/assets/SHA1SUM_JEOS25',
+                                expected='e6dcd507782a85738f0e258bd9d070a25f6ad71b')
+        compressed = asset.AssetSpec('SHA1SUM_JEOS25.gz',
+                                     expected='109932e939e48efc182532f3113d8f8e2d016354',
+                                     retriever=asset.GzipCompressRetriever)
+        self.assertTrue(asset.pipe_runner(plain, compressed))
+
+
 if __name__ == "__main__":
     unittest.main()
