@@ -9,6 +9,7 @@ python:
     - "3.4"
     - "3.5"
     - "3.6"
+    - "3.7-dev"
     - "nightly"
 
 env:
@@ -17,11 +18,6 @@ env:
       AVOCADO_LOG_DEBUG=yes
       SELF_CHECK_CONTINUOUS=y
       AVOCADO_CHECK_LEVEL=1
-
-branches:
-    only:
-        - master
-        - 52lts
 
 cache:
     directories:
