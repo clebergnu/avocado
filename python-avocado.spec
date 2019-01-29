@@ -44,7 +44,7 @@
 # from the RPM automatic requires/provides scanner.
 %global __requires_exclude ^/usr/bin/python[23]$
 
-Summary: Framework with tools and libraries for Automated Testing
+Summary: The best framework with tools and libraries for Automated Testing
 Name: python-%{srcname}
 Version: 67.0
 Release: 0%{?gitrel}%{?dist}
