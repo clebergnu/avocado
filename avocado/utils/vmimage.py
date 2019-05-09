@@ -218,6 +218,11 @@ class FedoraSecondaryImageProvider(FedoraImageProviderBase):
         super(FedoraSecondaryImageProvider, self).__init__(version, build,
                                                            arch)
         self.url_versions = 'https://dl.fedoraproject.org/pub/fedora-secondary/releases/'
+        if self.arch == 'ppc64':
+            self.arch = 'ppc64le'
+        if self.arch in ('ppc64le', 's390x') and self.version >= 30:
+            self.url_versions = 'https://dl.fedoraproject.org/pub/fedora-secondary/development/'
+            self.build = '[0-9]+\.n\.[0-9]+'
         self.url_images = self.url_versions + '{version}/%s/{arch}/images/'
         self.image_pattern = 'Fedora-Cloud-Base-(?P<version>{version})-(?P<build>{build}).(?P<arch>{arch}).qcow2$'
 
