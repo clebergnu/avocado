@@ -214,8 +214,11 @@ def get_loaded_modules():
     Gets list of loaded modules.
     :return: List of loaded modules.
     """
-    with open('/proc/modules', 'rb') as proc_modules:
-        return [astring.to_text(_.split(b' ', 1)[0]) for _ in proc_modules]
+    try:
+        with open('/proc/modules', 'rb') as proc_modules:
+            return [astring.to_text(_.split(b' ', 1)[0]) for _ in proc_modules]
+    except FileNotFoundError:
+        return []
 
 
 def check_kernel_config(config_name):
