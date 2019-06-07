@@ -16,9 +16,13 @@
 # client/shared/utils.py
 # Authors: Yiqiao Pu <ypu@redhat.com>
 
+"""
+Linux only memory utilities
+"""
 
 import os
 import re
+import sys
 import glob
 import math
 import logging
@@ -480,5 +484,5 @@ class MemInfo:
         for item in self.__dict__.items():
             yield item
 
-
-meminfo = MemInfo()
+if sys.platform == 'linux':
+    meminfo = MemInfo()
