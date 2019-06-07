@@ -9,6 +9,18 @@ env:
 
 matrix:
   include:
+    - os: windows
+      language: shell
+      install:
+        - rm -fr optional_plugins/runner_vm
+        - choco install make
+        - choco install python3 --params "/InstallDir:C:\Python3"
+        - dir C:\\Python3\\
+        - C:\\Python3\\python -m pip install --upgrade pip
+        - C:\\Python3\\python -m pip install -r requirements-selftests.txt
+        - C:\\Python3\\python setup.py develop --user
+      script:
+        - C:\\Python3\\python -m avocado --help
 
 cache:
     directories:
