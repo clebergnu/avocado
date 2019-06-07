@@ -3,6 +3,7 @@ Verifies the avocado.utils.iso9660 functionality
 """
 import os
 import shutil
+import sys
 import tempfile
 import unittest.mock
 
@@ -58,6 +59,8 @@ class BaseIso9660:
         prefix = temp_dir_prefix(__name__, self, 'setUp')
         self.tmpdir = tempfile.mkdtemp(prefix=prefix)
 
+    @unittest.skipIf(sys.platform.startswith('darwin'),
+                     "Test doesn't support macOS")
     def test_basic_workflow(self):
         """
         Check the basic Iso9660 workflow
@@ -70,6 +73,8 @@ class BaseIso9660:
         self.iso.close()
         self.iso.close()    # check that double-close won't fail
 
+    @unittest.skipIf(sys.platform.startswith('darwin'),
+                     "Test doesn't support macOS")
     @unittest.skipIf(not process.can_sudo("mount"),
                      "This test requires mount to run under sudo or root")
     def test_mnt_dir_workflow(self):
@@ -126,6 +131,8 @@ class IsoMount(BaseIso9660, unittest.TestCase):
     Mount-based check
     """
 
+    @unittest.skipIf(sys.platform.startswith('darwin'),
+                     "Test doesn't support macOS")
     @unittest.skipIf(not process.can_sudo("mount"),
                      "This test requires sudo or root")
     def setUp(self):

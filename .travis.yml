@@ -1,23 +1,21 @@
 dist: xenial
 language: python
 
-matrix:
-  allow_failures:
-    - python: "nightly"
-
-python:
-    - "3.4"
-    - "3.5"
-    - "3.6"
-    - "3.7"
-    - "nightly"
-
 env:
     - AVOCADO_PARALLEL_LINT=1
-      AVOCADO_PARALLEL_CHECK=yes
       AVOCADO_LOG_DEBUG=yes
       SELF_CHECK_CONTINUOUS=y
       AVOCADO_CHECK_LEVEL=1
+
+matrix:
+  include:
+    - os: osx
+      osx_image: xcode10.13
+      language: shell
+      install:
+        - rm -fr optional_plugins/runner_vm
+        - pip3 install --upgrade pip
+        - pip3 install -r requirements-selftests.txt
 
 cache:
     directories:
