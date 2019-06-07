@@ -111,13 +111,13 @@ class LVUtilsTest(unittest.TestCase):
 
 class DiskSpace(unittest.TestCase):
 
+    @unittest.skipIf(sys.platform.startswith('darwin'),
+                     'macOS does not support scsi_debug module')
     @unittest.skipIf(process.system("modinfo scsi_debug", shell=True,
                                     ignore_status=True),
                      "Kernel mod 'scsi_debug' not available.")
     @unittest.skipIf(linux_modules.module_is_loaded("scsi_debug"),
                      "Kernel mod 'scsi_debug' is already loaded.")
-    @unittest.skipIf(sys.platform.startswith('darwin'),
-                     'macOS does not support scsi_debug module')
     @unittest.skipIf(not process.can_sudo(), "This test requires root or "
                      "passwordless sudo configured.")
     def test_get_diskspace(self):
