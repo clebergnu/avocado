@@ -25,11 +25,15 @@ import re
 import select
 import shlex
 import shutil
-import signal
 import stat
 import subprocess
 import threading
 import time
+
+try:
+    import signal
+except ImportError:
+    signal = None
 
 from io import BytesIO, UnsupportedOperation
 
@@ -198,7 +202,22 @@ def get_children_pids(parent_pid, recursive=False):
     return children
 
 
-def kill_process_tree(pid, sig=signal.SIGKILL, send_sigcont=True,
+if signal is None:
+    SIGKILL = None
+    SIGCONT = None
+    SIGSTOP = None
+    SIGINT = None
+    SIGKILL = None
+    SIGKTERM = None
+else:
+    SIGKILL = signal.SIGKILL
+    SIGCONT = signal.SIGCONT
+    SIGSTOP = signal.SIGSTOP
+    SIGINT = signal.SIGINT
+    SIGKILL = signal.SIGKILL
+    SIGTERM = signal.SIGTERM
+    
+def kill_process_tree(pid, sig=SIGKILL, send_sigcont=True,
                       timeout=0):
     """
     Signal a process and all of its children.
@@ -223,7 +242,7 @@ def kill_process_tree(pid, sig=signal.SIGKILL, send_sigcont=True,
     if timeout > 0:
         start = time.time()
 
-    if not safe_kill(pid, signal.SIGSTOP):
+    if not safe_kill(pid, SIGSTOP):
         return [pid]
     killed_pids = [pid]
     for child in get_children_pids(pid):
@@ -231,7 +250,7 @@ def kill_process_tree(pid, sig=signal.SIGKILL, send_sigcont=True,
     safe_kill(pid, sig)
     if send_sigcont:
         for pid in killed_pids:
-            safe_kill(pid, signal.SIGCONT)
+            safe_kill(pid, SIGCONT)
     if timeout == 0:
         return killed_pids
     elif timeout > 0:
@@ -690,11 +709,12 @@ class SubProcess:
                 self.result.interrupted = "signal/ctrl+c"
                 self.wait()
                 signal.default_int_handler()
-            try:
-                signal.signal(signal.SIGINT, signal_handler)
-            except ValueError:
-                if self.verbose:
-                    log.info("Command %s running on a thread", self.cmd)
+            if signal is not None:
+                try:
+                    signal.signal(SIGINT, signal_handler)
+                except ValueError:
+                    if self.verbose:
+                        log.info("Command %s running on a thread", self.cmd)
 
     def _fill_results(self, rc):
         self._init_subprocess()
@@ -764,14 +784,14 @@ class SubProcess:
         Send a :attr:`signal.SIGTERM` to the process.
         """
         self._init_subprocess()
-        self.send_signal(signal.SIGTERM)
+        self.send_signal(SIGTERM)
 
     def kill(self):
         """
         Send a :attr:`signal.SIGKILL` to the process.
         """
         self._init_subprocess()
-        self.send_signal(signal.SIGKILL)
+        self.send_signal(SIGKILL)
 
     def send_signal(self, sig):
         """
@@ -800,7 +820,7 @@ class SubProcess:
             self._fill_results(rc)
         return rc
 
-    def wait(self, timeout=None, sig=signal.SIGTERM):
+    def wait(self, timeout=None, sig=SIGTERM):
         """
         Call the subprocess poll() method, fill results if rc is not None.
 
@@ -820,7 +840,7 @@ class SubProcess:
                 kill_process_tree(self.get_pid(), sig, timeout=1)
             except Exception:
                 try:
-                    kill_process_tree(self.get_pid(), signal.SIGKILL,
+                    kill_process_tree(self.get_pid(), SIGKILL,
                                       timeout=1)
                     log.warning("Process '%s' refused to die in 1s after "
                                 "sending %s to, destroyed it successfully "
@@ -893,7 +913,7 @@ class SubProcess:
         self._init_subprocess()
         return self.get_user_id() == 0
 
-    def run(self, timeout=None, sig=signal.SIGTERM):
+    def run(self, timeout=None, sig=SIGTERM):
         """
         Start a process and wait for it to end, returning the result attr.
 
