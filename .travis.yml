@@ -9,13 +9,6 @@ env:
 
 matrix:
   include:
-    - os: osx
-      osx_image: xcode10.13
-      language: shell
-      install:
-        - rm -fr optional_plugins/runner_vm
-        - pip3 install --upgrade pip
-        - pip3 install -r requirements-selftests.txt
 
 cache:
     directories:
