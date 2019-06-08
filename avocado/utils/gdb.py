@@ -21,10 +21,14 @@ __all__ = ['GDB', 'GDBServer', 'GDBRemote']
 
 import os
 import time
-import fcntl
 import socket
 import subprocess
 import tempfile
+
+try:
+    import fcntl
+except ImportError:
+    fcntl = None
 
 from . import network
 from .external import gdbmi_parser
@@ -340,8 +344,9 @@ class GDB:
             else:
                 raise
 
-        fcntl.fcntl(self.process.stdout.fileno(),
-                    fcntl.F_SETFL, os.O_NONBLOCK)
+        if fcntl is not None:
+            fcntl.fcntl(self.process.stdout.fileno(),
+                        fcntl.F_SETFL, os.O_NONBLOCK)
         self.read_until_break()
 
         # If this instance is connected to another target. If so, what
