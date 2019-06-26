@@ -67,11 +67,7 @@ class NRun(CLICmd):
             klass, args = factory
             name = args.get("name")
             identifier = str(test.TestID(index + 1, name, None, no_digits))
-            if isinstance(klass, str):
-                runnable = nrunner.Runnable(kind='avocado-instrumented',
-                                            uri=name,
-                                            tags=args.get("tags", {}))
-            elif klass == test.PythonUnittest:
+            if klass == test.PythonUnittest:
                 test_dir = args.get("test_dir")
                 module_prefix = test_dir.split(os.getcwd())[1][1:]
                 module_prefix = module_prefix.replace("/", ".")
@@ -80,7 +76,8 @@ class NRun(CLICmd):
             elif klass == test.SimpleTest:
                 runnable = nrunner.Runnable('exec-test', args.get('executable'))
             else:
-                # FIXME: This should instead raise a warning/error
+                # FIXME: This should instead raise an error
+                print('WARNING: unknown test type "%s", using "noop"' % factory[0])
                 runnable = nrunner.Runnable('noop')
 
             tasks.append(nrunner.Task(identifier, runnable, status_uris))
