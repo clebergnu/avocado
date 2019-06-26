@@ -120,12 +120,17 @@ class NRun(CLICmd):
                 task_args.append('-a')
                 task_args.append(arg)
 
+        runner_args = []
+        if task.runnable.uri is not None:
+            runner_args += ['-u', task.runnable.uri]
+
         args = ['-m', 'avocado.core.nrunner',
                 'task-run',
                 '-i', task.identifier,
-                '-k', task.runnable.kind,
-                '-u', task.runnable.uri]
+                '-k', task.runnable.kind]
+
         args += list(task_args)
+        args += list(runner_args)
         args += list(status_service_args)
 
         #pylint: disable=E1133
