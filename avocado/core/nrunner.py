@@ -156,18 +156,25 @@ class PythonUnittestRunner(BaseRunner):
         yield queue.get()
 
 
+#: The runnables this specific application is capable of handling
+RUNNABLE_KIND_CAPABLE = {'noop': NoOpRunner,
+                         'exec': ExecRunner,
+                         'exec-test': ExecTestRunner,
+                         'python-unittest': PythonUnittestRunner}
+
+
+def subcommand_runnables_capable(args, echo=print):
+    for runnable_kind in RUNNABLE_KIND_CAPABLE:
+        echo(runnable_kind)
+
+
 def runner_from_runnable(runnable):
     """
     Gets a Runner instance from a Runnable
     """
-    if runnable.kind == 'noop':
-        return NoOpRunner(runnable)
-    if runnable.kind == 'exec':
-        return ExecRunner(runnable)
-    if runnable.kind == 'exec-test':
-        return ExecTestRunner(runnable)
-    if runnable.kind == 'python-unittest':
-        return PythonUnittestRunner(runnable)
+    runner = RUNNABLE_KIND_CAPABLE.get(runnable.kind, None)
+    if runner is not None:
+        return runner(runnable)
 
 
 CMD_RUNNABLE_RUN_ARGS = (
@@ -428,6 +435,7 @@ def parse():
     parser = argparse.ArgumentParser(prog='nrunner')
     subcommands = parser.add_subparsers(dest='subcommand')
     subcommands.required = True
+    subcommands.add_parser('runnables-capable')
     runnable_run_parser = subcommands.add_parser('runnable-run')
     for arg in CMD_RUNNABLE_RUN_ARGS:
         runnable_run_parser.add_argument(*arg[0], **arg[1])
@@ -449,7 +457,9 @@ def parse():
 
 def main():
     args = parse()
-    if args.subcommand == 'runnable-run':
+    if args.subcommand == 'runnables-capable':
+        subcommand_runnables_capable(args)
+    elif args.subcommand == 'runnable-run':
         subcommand_runnable_run(args)
     elif args.subcommand == 'runnable-run-recipe':
         subcommand_runnable_run_recipe(args)
