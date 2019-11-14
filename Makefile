@@ -8,11 +8,13 @@ AVOCADO_DIRNAME=$(shell echo $${PWD\#\#*/})
 AVOCADO_EXTERNAL_PLUGINS=$(filter-out ../$(AVOCADO_DIRNAME), $(shell find ../ -maxdepth 1 -mindepth 1 -type d))
 # List of optional plugins that have to be in setup in a giver order
 # because there may be depedencies between plugins
+ifndef AVOCADO_OPTIONAL_PLUGINS
 AVOCADO_OPTIONAL_PLUGINS_ORDERED="./optional_plugins/runner_remote"
 # Other optional plugins found in "optional_plugins" directory
 AVOCADO_OPTIONAL_PLUGINS_OTHERS=$(shell find ./optional_plugins -maxdepth 1 -mindepth 1 -type d)
 # Unique list of optional plugins
 AVOCADO_OPTIONAL_PLUGINS=$(shell (echo "$(AVOCADO_OPTIONAL_PLUGINS_ORDERED) $(AVOCADO_OPTIONAL_PLUGINS_OTHERS)" | tr ' ' '\n' | awk '!a[$$0]++'))
+endif
 AVOCADO_PLUGINS=$(AVOCADO_OPTIONAL_PLUGINS) $(AVOCADO_EXTERNAL_PLUGINS)
 RELEASE_COMMIT=$(shell git log --pretty=format:'%H' -n 1 $(VERSION))
 RELEASE_SHORT_COMMIT=$(shell git log --pretty=format:'%h' -n 1 $(VERSION))
@@ -131,9 +133,10 @@ requirements-selftests: pip
 smokecheck: clean develop
 	./scripts/avocado run passtest.py
 
+OPTIONAL_PLUGINS_TESTS=$(patsubst %,%/tests/*, $(AVOCADO_OPTIONAL_PLUGINS))
 check: clean develop
 	# Unless manually set, this is equivalent to AVOCADO_CHECK_LEVEL=0
-	PYTHON=$(PYTHON) $(PYTHON) -m avocado nrun selftests/*.sh selftests/unit/ selftests/functional/ optional_plugins/*/tests/
+	PYTHON=$(PYTHON) $(PYTHON) -m avocado nrun selftests/*.sh selftests/unit/ selftests/functional/ $(OPTIONAL_PLUGINS_TESTS)
 	selftests/check_tmp_dirs
 
 check-full: clean develop
@@ -182,6 +185,7 @@ variables:
 	@echo "ARCHIVE_BASE_NAME: $(ARCHIVE_BASE_NAME)"
 	@echo "PYTHON_MODULE_NAME: $(PYTHON_MODULE_NAME)"
 	@echo "RPM_BASE_NAME: $(RPM_BASE_NAME)"
+	@echo "OPTIONAL_PLUGINS_TESTS: $(OPTIONAL_PLUGINS_TESTS)"
 
 propagate-version:
 	for DIR in $(AVOCADO_PLUGINS); do\
