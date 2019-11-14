@@ -45,4 +45,4 @@ install:
     - if [ "$RUN_ONLY_COVERAGE" == yes ]; then pip install codecov; fi
 
 script:
-    - if [ "$RUN_ONLY_COVERAGE" == yes ]; then make develop && ./selftests/run_coverage && codecov; else make check; fi
+    - if [ "$RUN_ONLY_COVERAGE" == yes ]; then make develop && ./selftests/run_coverage && codecov; else make AVOCADO_OPTIONAL_PLUGINS="optional_plugins/html" check; fi
