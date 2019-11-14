@@ -42,6 +42,7 @@ addons:
 
 install:
     - pip install -r requirements-selftests.txt
+    - if [ "$RUN_ONLY_COVERAGE" == yes ]; then pip install codecov; fi
 
 script:
-    - if [ "$RUN_ONLY_COVERAGE" == yes ]; then pip install codecov && make develop && ./selftests/run_coverage && codecov; else make check; fi
+    - if [ "$RUN_ONLY_COVERAGE" == yes ]; then make develop && ./selftests/run_coverage && codecov; else make check; fi
