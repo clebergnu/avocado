@@ -1,4 +1,5 @@
 #!/bin/sh -e
+export PYTHONDONTWRITEBYTECODE=yes
 if [ "$AVOCADO_PARALLEL_LINT_JOBS" ]; then
     INSPEKT_LINT_OPTIONS="--parallel=$AVOCADO_PARALLEL_LINT_JOBS";
 fi
