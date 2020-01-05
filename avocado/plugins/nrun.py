@@ -62,7 +62,7 @@ class NRun(CLICmd):
 
     @asyncio.coroutine
     def spawn_tasks(self):
-        number_of_runnables = 2 * multiprocessing.cpu_count() - 1
+        number_of_runnables = multiprocessing.cpu_count()
         while True:
             while len(set(self.status_server.tasks_pending).intersection(self.spawned_tasks)) >= number_of_runnables:
                 yield from asyncio.sleep(0.1)
