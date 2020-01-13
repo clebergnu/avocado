@@ -2,6 +2,8 @@
 Welcome to Avocado
 ==================
 
+Noop.
+
 Avocado is a set of tools and libraries to help with automated testing.
 
 One can call it a test framework with benefits.  Native tests are written in
