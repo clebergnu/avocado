@@ -44,6 +44,9 @@ class Runnable:
         #: required.  It can also be set to a specific location to be used
         #: as a work directory, if the runnable already has one crated.
         self.work_dir = False
+        #: Wether this runnable needs a directory for storing artifacts to
+        #: be preserved, usually test results themselves.
+        self.result_dir = False
 
     def __repr__(self):
         fmt = '<Runnable kind="{}" uri="{}" args="{}" kwargs="{}" tags="{}">'
@@ -80,6 +83,9 @@ class Runnable:
 
         if self.work_dir:
             args.append('--requires-work-dir')
+
+        if self.result_dir:
+            args.append('--requires-result-dir')
 
         if self.tags is not None:
             args.append('tags=json:%s' % json.dumps(self.get_serializable_tags()))
@@ -429,6 +435,7 @@ def runnable_from_args(args):
                         *decoded_args,
                         **_key_val_args_to_kwargs(args.get('kwargs', [])))
     runnable.work_dir = args.get('requires_work_dir')
+    runnable.result_dir = args.get('requires_result_dir')
     return runnable
 
 
