@@ -34,6 +34,17 @@ class SettingsTest(unittest.TestCase):
         config = stgs.as_dict()
         self.assertIsNone(config.get('foo.non_existing'))
 
+    def test_different_default_int(self):
+        stgs = settings.Settings(self.config_file.name)
+        stgs.register_option('foo', 'int_key', 2,
+                             'integer value', key_type=int)
+        # Question: do we want users to call _merge_with_configs()?
+        # with the following line enable, we get the right value coming
+        # from the configuration file. Without, it fails.
+        # stgs._merge_with_configs()
+        config = stgs.as_dict()
+        self.assertEqual(config.get('foo.int_key'), 1)
+
     def tearDown(self):
         os.unlink(self.config_file.name)
 
