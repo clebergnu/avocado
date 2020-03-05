@@ -131,10 +131,7 @@ class Job:
                        line options and argument parsing
         :type config: dict
         """
-        _config_temp = {'_future': {'run.journal.enabled': False}}
-        if config:
-            _config_temp.update(config)
-        self.config = _config_temp
+        self.config = config or {}
         self.log = LOG_UI
         self.loglevel = self.LOG_MAP.get(settings.get_value('job.output',
                                                             'loglevel',
