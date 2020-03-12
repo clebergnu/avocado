@@ -171,14 +171,13 @@ class ConfigOption:
         return args
 
     def _as_list(self, value):
-        if value == '':
-            return []
-
         if isinstance(value, str):
-            return value.strip('[]').split(',')
+            return [v for v in value.strip('[]').split(',') if v]
 
         if isinstance(value, list):
             return value
+
+        raise ValueError(f'"{value}" could not be converted into a list')
 
     def set_value(self, value, convert=False):
         dst_type = self.key_type

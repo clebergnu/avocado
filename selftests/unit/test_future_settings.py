@@ -83,5 +83,19 @@ class SettingsTest(unittest.TestCase):
         os.unlink(self.config_file.name)
 
 
+class ConfigOption(unittest.TestCase):
+
+    def test_as_list(self):
+        config_option = settings.ConfigOption('namespace', 'help_message')
+        self.assertEqual(config_option._as_list(''), [])
+        self.assertEqual(config_option._as_list('[]'), [])
+        self.assertEqual(config_option._as_list('[,,,]'), [])
+
+    def test_as_list_fails(self):
+        with self.assertRaises(ValueError):
+            config_option = settings.ConfigOption('namespace', 'help_message')
+            config_option._as_list(None)
+
+
 if __name__ == '__main__':
     unittest.main()
