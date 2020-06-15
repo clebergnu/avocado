@@ -69,6 +69,28 @@ def register_core_options():
                                     help_msg=help_msg,
                                     default=60)
 
+    help_msg = ('Whether to display colored output in terminals that '
+                'support it')
+    future_settings.register_option(section='runner.output',
+                                    key='colored',
+                                    key_type=bool,
+                                    default=True,
+                                    help_msg=help_msg)
+
+    help_msg = ('Whether to force colored output to non-tty outputs '
+                '(e.g. log files). Allowed values: auto, always, never')
+    future_settings.register_option(section='runner.output',
+                                    key='color',
+                                    default='auto',
+                                    help_msg=help_msg)
+
+    help_msg = 'Use UTF8 encoding (True or False)'
+    future_settings.register_option(section='runner.output',
+                                    key='utf8',
+                                    key_type=bool,
+                                    default=True,
+                                    help_msg=help_msg)
+
 
 def initialize_plugins():
     InitDispatcher().map_method('initialize')
