@@ -24,6 +24,7 @@ import traceback
 
 from . import exit_codes
 from ..utils import path as utils_path
+from .output_streams import BUILTIN_STREAMS, BUILTIN_STREAM_SETS
 from .settings import settings
 
 
@@ -34,16 +35,6 @@ logging.raiseExceptions = False
 LOG_UI = logging.getLogger("avocado.app")
 #: Pre-defined Avocado job/test logger
 LOG_JOB = logging.getLogger("avocado.test")
-
-#: Builtin special keywords to enable set of logging streams
-BUILTIN_STREAMS = {'app': 'application output',
-                   'test': 'test output',
-                   'debug': 'tracebacks and other debugging info',
-                   'early':  'early logging of other streams, including test (very verbose)'}
-#: Groups of builtin streams
-BUILTIN_STREAM_SETS = {'all': 'all builtin streams',
-                       'none': 'disables regular output (leaving only errors enabled)'}
-
 
 class TermSupport:
 

@@ -15,7 +15,7 @@
 
 from .dispatcher import InitDispatcher
 from .future.settings import settings as future_settings
-from .output import BUILTIN_STREAMS, BUILTIN_STREAM_SETS
+from .output_streams import BUILTIN_STREAMS, BUILTIN_STREAM_SETS
 
 
 def register_core_options():
