@@ -15,3 +15,10 @@ freebsd_version_task:
        - python3 -m avocado --version
     freebsd_instance:
        image_family: freebsd-12-1
+
+osx_version_task:
+    version_script:
+       - python3 setup.py develop --user
+       - python3 -m avocado --version
+    osx_instance:
+       image: catalina-xcode-12.0
