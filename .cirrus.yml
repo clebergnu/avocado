@@ -22,3 +22,10 @@ osx_version_task:
        - python3 -m avocado --version
     osx_instance:
        image: catalina-xcode-12.0
+
+windows_version_task:
+    version_script:
+       - python setup.py develop --user
+       - python -m avocado --version
+    windows_container:
+       image: rkttu/python-nanoserver:3.8.2_1809
