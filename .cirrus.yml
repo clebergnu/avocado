@@ -8,3 +8,10 @@ version_task:
           - image: fedora:30
           - image: fedora:29
           - image: registry.access.redhat.com/ubi8/ubi
+
+freebsd_version_task:
+    version_script:
+       - python3 setup.py develop --user
+       - python3 -m avocado --version
+    freebsd_instance:
+       image_family: freebsd-12-1
