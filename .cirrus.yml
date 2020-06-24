@@ -28,4 +28,4 @@ windows_version_task:
        - python setup.py develop --user
        - python -m avocado --version
     windows_container:
-       image: rkttu/python-nanoserver:3.8.2_1809
+       image: rkttu/python-nanoserver:3.8.2_1909
