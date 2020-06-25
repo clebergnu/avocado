@@ -11,6 +11,8 @@ version_task:
 
 freebsd_version_task:
     version_script:
+       - python3 -m ensurepip
+       - python3 -m pip install -r requirements-selftests.txt
        - python3 setup.py develop --user
        - python3 -m avocado --version
     freebsd_instance:
@@ -18,6 +20,7 @@ freebsd_version_task:
 
 osx_version_task:
     version_script:
+       - python3 -m pip install --user -r requirements-selftests.txt
        - python3 setup.py develop --user
        - python3 -m avocado --version
     osx_instance:
