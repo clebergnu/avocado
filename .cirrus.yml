@@ -15,7 +15,7 @@ freebsd_version_task:
        - python3 -m pip install -r requirements-selftests.txt
        - python3 setup.py develop --user
        - python3 -m avocado --version
-       - python3 -m unittest -v selftests/unit/test_astring.py
+       - python3 -m unittest -v selftests/unit/test_astring.py selftests/unit/test_test.py
     freebsd_instance:
        image_family: freebsd-12-1
 
@@ -24,7 +24,7 @@ osx_version_task:
        - python3 -m pip install --user -r requirements-selftests.txt
        - python3 setup.py develop --user
        - python3 -m avocado --version
-       - python3 -m unittest -v selftests/unit/test_astring.py
+       - python3 -m unittest -v selftests/unit/test_astring.py selftests/unit/test_test.py
     osx_instance:
        image: catalina-xcode-12.0
 
@@ -32,6 +32,6 @@ windows_version_task:
     version_script:
        - python setup.py develop --user
        - python -m avocado --version
-       - python -m unittest -v selftests/unit/test_astring.py
+       - python -m unittest -v selftests/unit/test_astring.py selftests/unit/test_test.py
     windows_container:
        image: rkttu/python-nanoserver:3.8.2_1809
