@@ -27,7 +27,7 @@ from avocado.core import output
 from avocado.core import test
 from avocado.core.plugin_interfaces import CLI
 from avocado.core.plugin_interfaces import Resolver
-from avocado.core.future.settings import settings
+from avocado.core.settings import settings
 from avocado.core.resolver import ReferenceResolution
 from avocado.core.resolver import ReferenceResolutionResult
 from avocado.core.nrunner import Runnable

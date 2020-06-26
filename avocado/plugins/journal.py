@@ -18,7 +18,7 @@ import os
 import sqlite3
 import datetime
 
-from avocado.core.future.settings import settings
+from avocado.core.settings import settings
 from avocado.core.plugin_interfaces import CLI, ResultEvents
 
 

@@ -20,7 +20,7 @@ import os
 import string
 from xml.dom.minidom import Document
 
-from avocado.core.future.settings import settings
+from avocado.core.settings import settings
 from avocado.core.parser import FileOrStdoutAction
 from avocado.core.output import LOG_UI
 from avocado.core.plugin_interfaces import Init, CLI, Result

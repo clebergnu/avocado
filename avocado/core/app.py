@@ -25,7 +25,7 @@ from .dispatcher import CLICmdDispatcher
 from .dispatcher import CLIDispatcher
 from .output import STD_OUTPUT
 from .parser import Parser
-from .future.settings import settings
+from .settings import settings
 from ..utils import process
 
 

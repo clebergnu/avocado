@@ -23,7 +23,7 @@ import sys
 import yaml
 
 from avocado.core import exit_codes
-from avocado.core.future.settings import settings
+from avocado.core.settings import settings
 from avocado.core.output import LOG_UI
 from avocado.core.plugin_interfaces import Init, CLI, Varianter
 from avocado.utils import astring

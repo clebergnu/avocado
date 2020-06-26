@@ -46,7 +46,7 @@ from ..utils import path as utils_path
 from ..utils import process
 from ..utils import stacktrace
 from .decorators import skip
-from .future.settings import settings
+from .settings import settings
 from .test_id import TestID
 from .version import VERSION
 from .output import LOG_JOB

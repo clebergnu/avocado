@@ -18,7 +18,7 @@ import os
 import sys
 
 from avocado.core import exit_codes
-from avocado.core.future.settings import settings
+from avocado.core.settings import settings
 from avocado.core.plugin_interfaces import CLICmd
 from avocado.core.output import LOG_UI
 from avocado.utils import distro as utils_distro

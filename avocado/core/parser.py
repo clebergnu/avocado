@@ -24,8 +24,7 @@ from glob import glob
 
 from . import exit_codes
 from . import varianter
-from .future.settings import settings as future_settings
-from .future.settings import ConfigFileNotFound, SettingsError
+from .settings import settings, ConfigFileNotFound, SettingsError
 from .nrunner import Runnable
 from .output import LOG_UI
 from .resolver import ReferenceResolution
@@ -94,28 +93,28 @@ class Parser:
 
         help_msg = ('Turn the paginator on/off. Useful when outputs are too'
                     'long. This will be a boolean soon.')
-        future_settings.register_option(section='core',
-                                        key='paginator',
-                                        help_msg=help_msg,
-                                        default='off',
-                                        choices=('on', 'off'),
-                                        parser=self.application,
-                                        long_arg='--paginator')
+        settings.register_option(section='core',
+                                 key='paginator',
+                                 help_msg=help_msg,
+                                 default='off',
+                                 choices=('on', 'off'),
+                                 parser=self.application,
+                                 long_arg='--paginator')
 
         help_msg = ('Some commands can produce more information. This option '
                     'will enable the verbosity when applicable.')
-        future_settings.register_option(section='core',
-                                        key='verbose',
-                                        help_msg=help_msg,
-                                        default=False,
-                                        key_type=bool,
-                                        parser=self.application,
-                                        long_arg='--verbose',
-                                        short_arg='-V')
+        settings.register_option(section='core',
+                                 key='verbose',
+                                 help_msg=help_msg,
+                                 default=False,
+                                 key_type=bool,
+                                 parser=self.application,
+                                 long_arg='--verbose',
+                                 short_arg='-V')
 
-        future_settings.add_argparser_to_option(namespace='core.show',
-                                                parser=self.application,
-                                                long_arg='--show')
+        settings.add_argparser_to_option(namespace='core.show',
+                                         parser=self.application,
+                                         long_arg='--show')
 
     def start(self):
         """
@@ -128,7 +127,7 @@ class Parser:
 
         # Load settings from file, if user provides one
         if self.args.config is not None:
-            future_settings.process_config_path(self.args.config)
+            settings.process_config_path(self.args.config)
 
         # Use parent parsing to avoid breaking the output of --help option
         self.application = ArgumentParser(prog=PROG,

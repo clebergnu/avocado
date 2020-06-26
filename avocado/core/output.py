@@ -24,7 +24,7 @@ import traceback
 
 from . import exit_codes
 from ..utils import path as utils_path
-from .future.settings import settings as future_settings
+from .settings import settings as settings
 from .streams import BUILTIN_STREAMS
 
 
@@ -76,7 +76,7 @@ class TermSupport:
         allowed_terms = ['linux', 'xterm', 'xterm-256color', 'vt100', 'screen',
                          'screen-256color', 'screen.xterm-256color']
         term = os.environ.get("TERM")
-        config = future_settings.as_dict()
+        config = settings.as_dict()
         colored = config.get('runner.output.colored')
         force_color = config.get('runner.output.color')
         if force_color == "never":
@@ -714,7 +714,7 @@ def log_plugin_failures(failures):
                      attribute `load_failures`
     """
     msg_fmt = 'Failed to load plugin from module "%s": %s :\n%s'
-    config = future_settings.as_dict()
+    config = settings.as_dict()
     silenced = config.get('plugins.skip_broken_plugin_notification')
     for failure in failures:
         if failure[0].module_name in silenced:

@@ -22,7 +22,7 @@ import signal
 import time
 
 from . import exceptions
-from .future.settings import settings
+from .settings import settings
 from .output import LOG_JOB as TEST_LOG
 from ..utils import wait
 

@@ -21,7 +21,7 @@ import json
 import os
 
 from . import varianter
-from .future.settings import settings
+from .settings import settings
 from .output import LOG_UI, LOG_JOB
 from ..utils.path import init_dir
 

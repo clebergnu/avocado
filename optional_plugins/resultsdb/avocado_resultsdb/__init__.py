@@ -22,7 +22,7 @@ import time
 import resultsdb_api
 
 from avocado.core.plugin_interfaces import CLI, ResultEvents, Result
-from avocado.core.future.settings import settings
+from avocado.core.settings import settings
 from avocado.core.output import LOG_UI
 
 

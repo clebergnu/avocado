@@ -23,7 +23,7 @@ from avocado.core import exit_codes
 from avocado.core import jobdata
 from avocado.core import status
 
-from avocado.core.future.settings import settings as future_settings
+from avocado.core.settings import settings
 from avocado.core.output import LOG_UI
 from avocado.core.plugin_interfaces import CLI
 from avocado.core.test import ReplaySkipTest
@@ -48,39 +48,39 @@ class Replay(CLI):
 
         help_msg = ('Replay a job identified by its (partial) hash id. '
                     'Use "--replay" latest to replay the latest job.')
-        future_settings.register_option(section='run.replay',
-                                        key='job_id',
-                                        default=None,
-                                        help_msg=help_msg,
-                                        parser=replay_parser,
-                                        long_arg='--replay')
+        settings.register_option(section='run.replay',
+                                 key='job_id',
+                                 default=None,
+                                 help_msg=help_msg,
+                                 parser=replay_parser,
+                                 long_arg='--replay')
 
         help_msg = 'Filter tests to replay by test status.'
-        future_settings.register_option(section='run.replay',
-                                        key='test_status',
-                                        default=[],
-                                        help_msg=help_msg,
-                                        key_type=self._valid_status,
-                                        parser=replay_parser,
-                                        long_arg='--replay-test-status')
+        settings.register_option(section='run.replay',
+                                 key='test_status',
+                                 default=[],
+                                 help_msg=help_msg,
+                                 key_type=self._valid_status,
+                                 parser=replay_parser,
+                                 long_arg='--replay-test-status')
 
         help_msg = 'Ignore variants and/or configuration from the source job.'
-        future_settings.register_option(section='run.replay',
-                                        key='ignore',
-                                        default=[],
-                                        help_msg=help_msg,
-                                        key_type=self._valid_ignore,
-                                        parser=replay_parser,
-                                        long_arg='--replay-ignore')
+        settings.register_option(section='run.replay',
+                                 key='ignore',
+                                 default=[],
+                                 help_msg=help_msg,
+                                 key_type=self._valid_ignore,
+                                 parser=replay_parser,
+                                 long_arg='--replay-ignore')
 
         help_msg = 'Resume an interrupted job'
-        future_settings.register_option(section='run.replay',
-                                        key='resume',
-                                        default=False,
-                                        help_msg=help_msg,
-                                        key_type=bool,
-                                        parser=replay_parser,
-                                        long_arg='--replay-resume')
+        settings.register_option(section='run.replay',
+                                 key='resume',
+                                 default=False,
+                                 help_msg=help_msg,
+                                 key_type=bool,
+                                 parser=replay_parser,
+                                 long_arg='--replay-resume')
 
     def _valid_status(self, string):
         if not string:
@@ -112,7 +112,7 @@ class Replay(CLI):
     def load_config(self, resultsdir):
         config = jobdata.retrieve_config(resultsdir)
         if config is not None:
-            future_settings.process_config_path(config)
+            settings.process_config_path(config)
 
     def _get_tests_from_tap(self, path):
         if not os.path.exists(path):

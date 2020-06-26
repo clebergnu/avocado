@@ -20,7 +20,7 @@ from avocado.core import test
 from avocado.core import tags
 from avocado.core import parser_common_args
 from avocado.core.output import LOG_UI
-from avocado.core.future.settings import settings
+from avocado.core.settings import settings
 from avocado.core.plugin_interfaces import CLICmd
 from avocado.utils import astring
 

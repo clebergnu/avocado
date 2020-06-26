@@ -11,7 +11,7 @@ from avocado.core import parser_common_args
 from avocado.core import resolver
 from avocado.core.spawners.process import ProcessSpawner
 from avocado.core.spawners.podman import PodmanSpawner
-from avocado.core.future.settings import settings
+from avocado.core.settings import settings
 from avocado.core.output import LOG_UI
 from avocado.core.parser import HintParser
 from avocado.core.test_id import TestID

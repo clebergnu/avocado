@@ -14,7 +14,7 @@
 
 import os
 
-from avocado.core.future.settings import settings
+from avocado.core.settings import settings
 from avocado.core.plugin_interfaces import CLICmd
 from avocado.core import resolver
 from avocado.core import output

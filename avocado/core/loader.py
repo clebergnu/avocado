@@ -32,7 +32,7 @@ from . import test
 from . import safeloader
 from .references import reference_split
 from ..utils import stacktrace
-from .future.settings import settings as future_settings
+from .settings import settings
 from .output import LOG_UI
 
 
@@ -403,26 +403,26 @@ def add_loader_options(parser, section='run'):
                 "either @loader_name or TEST_TYPE. By default it tries all "
                 "available loaders according to priority set in "
                 "settings->plugins.loaders.")
-    future_settings.register_option(section=section,
-                                    key='loaders',
-                                    nargs='*',
-                                    key_type=list,
-                                    default=['file', '@DEFAULT'],
-                                    help_msg=help_msg,
-                                    parser=arggrp,
-                                    long_arg='--loaders')
+    settings.register_option(section=section,
+                             key='loaders',
+                             nargs='*',
+                             key_type=list,
+                             default=['file', '@DEFAULT'],
+                             help_msg=help_msg,
+                             parser=arggrp,
+                             long_arg='--loaders')
 
     help_msg = ("Path to an specific test runner that allows the use of its "
                 "own tests. This should be used for running tests that do not "
                 "conform to Avocado\'s SIMPLE test interface and can not run "
                 "standalone. Note: the use of --external-runner overwrites "
                 "the --loaders to 'external_runner'")
-    future_settings.register_option(section=section,
-                                    key='external_runner',
-                                    default=None,
-                                    help_msg=help_msg,
-                                    parser=arggrp,
-                                    long_arg='--external-runner')
+    settings.register_option(section=section,
+                             key='external_runner',
+                             default=None,
+                             help_msg=help_msg,
+                             parser=arggrp,
+                             long_arg='--external-runner')
 
     help_msg = ("Change directory before executing tests. This option may be "
                 "necessary because of requirements and/or limitations of the "
@@ -432,25 +432,25 @@ def add_loader_options(parser, section='run'):
                 "be run from the directory where those files are located, "
                 "use 'test' here and specify the test directory with the "
                 "option '--external-runner-testdir'.")
-    future_settings.register_option(section=section,
-                                    key='external_runner_chdir',
-                                    help_msg=help_msg,
-                                    default=None,
-                                    parser=arggrp,
-                                    choices=('runner', 'test'),
-                                    long_arg='--external-runner-chdir')
+    settings.register_option(section=section,
+                             key='external_runner_chdir',
+                             help_msg=help_msg,
+                             default=None,
+                             parser=arggrp,
+                             choices=('runner', 'test'),
+                             long_arg='--external-runner-chdir')
 
     help_msg = ("Where test files understood by the external test runner "
                 "are located in the filesystem. Obviously this assumes and "
                 "only applies to external test runners that run tests from "
                 "files")
-    future_settings.register_option(section=section,
-                                    key='external_runner_testdir',
-                                    metavar='DIRECTORY',
-                                    default=None,
-                                    help_msg=help_msg,
-                                    parser=arggrp,
-                                    long_arg='--external-runner-testdir')
+    settings.register_option(section=section,
+                             key='external_runner_testdir',
+                             metavar='DIRECTORY',
+                             default=None,
+                             help_msg=help_msg,
+                             parser=arggrp,
+                             long_arg='--external-runner-testdir')
 
 
 class NotATest:
