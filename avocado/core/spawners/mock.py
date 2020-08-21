@@ -1,3 +1,4 @@
+import asyncio
 import random
 
 from ...core.plugin_interfaces import Spawner
@@ -32,6 +33,14 @@ class MockSpawner(Spawner):
     async def spawn_task(self, task_info):
         self._known_tasks[task_info] = True
         return True
+
+    @staticmethod
+    async def wait_task(task_info):
+        while True:
+            if MockSpawner.is_task_alive(task_info):
+                return
+            await asyncio.sleep(0.1)
+
 
 
 class MockRandomAliveSpawner(MockSpawner):
