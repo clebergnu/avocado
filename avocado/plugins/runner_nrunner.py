@@ -16,15 +16,19 @@
 NRunner based implementation of job compliant runner
 """
 
+import asyncio
 import json
+import multiprocessing
 import os
-import time
 from copy import copy
 
 from avocado.core import nrunner
+from avocado.core.dispatcher import SpawnerDispatcher
 from avocado.core.plugin_interfaces import Runner as RunnerInterface
 from avocado.core.status.repo import StatusRepo
+from avocado.core.status.server import StatusServer
 from avocado.core.task.info import TaskInfo
+from avocado.core.task.statemachine import TaskStateMachine, Worker
 from avocado.core.test_id import TestID
 
 
@@ -32,6 +36,8 @@ class Runner(RunnerInterface):
 
     name = 'nrunner'
     description = '*EXPERIMENTAL* nrunner based implementation of job compliant runner'
+
+    NUMBER_OF_WORKERS = multiprocessing.cpu_count() + 2
 
     def _save_to_file(self, filename, buff, mode='wb'):
         with open(filename, mode) as fp:
@@ -72,7 +78,7 @@ class Runner(RunnerInterface):
         with open(data_file, 'w') as fp:
             fp.write("{}\n".format(task.output_dir))
 
-    def _get_all_tasks_info(self, test_suite):
+    def _get_all_tasks_info(self, test_suite, status_server_uri):
         result = []
         no_digits = len(str(len(test_suite)))
         for index, task in enumerate(test_suite.tests, start=1):
@@ -83,27 +89,55 @@ class Runner(RunnerInterface):
                              None,
                              no_digits)
             task.identifier = test_id
+            task.status_services.append(nrunner.TaskStatusService(status_server_uri))
             result.append(TaskInfo(task))
         return result
 
+    def _start_status_server(self, status_server_uri):
+        # pylint: disable=W0201
+        self.status_repo = StatusRepo()
+        # pylint: disable=W0201
+        self.status_server = StatusServer(status_server_uri,
+                                          self.status_repo)
+        asyncio.ensure_future(self.status_server.serve_forever())
+
     def run_suite(self, job, test_suite):
         summary = set()
-        if job.timeout > 0:
-            deadline = time.time() + job.timeout
-        else:
-            deadline = None
+
+        # FIXME: re-enable job wide timeout
+        # if job.timeout > 0:
+        #     deadline = time.time() + job.timeout
+        # else:
+        #     deadline = None
 
         test_suite.tests, _ = nrunner.check_tasks_requirements(test_suite.tests)
         job.result.tests_total = test_suite.size  # no support for variants yet
         result_dispatcher = job.result_events_dispatcher
-        status_repo = StatusRepo()
-        for task_info in self._get_all_tasks_info(test_suite):
-            if deadline is not None and time.time() > deadline:
-                break
-            task = task_info.task
+
+        # FIXME: define URI in a proper registered setting
+        status_server_uri = '127.0.0.1:8888'
+        self._start_status_server(status_server_uri)
+
+        tasks_info = self._get_all_tasks_info(test_suite,
+                                                  status_server_uri)
+        tsm = TaskStateMachine(tasks_info)
+        # FIXME: should be registered
+        spawner_name = test_suite.config.get('run.spawner')
+        if spawner_name is None:
+            spawner_name = 'process'
+        spawner_extension = SpawnerDispatcher()[spawner_name]
+        spawner = spawner_extension.obj
+        workers = [Worker(tsm, spawner).run()
+                   for _ in range(self.NUMBER_OF_WORKERS)]
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(asyncio.gather(*workers))
+
+        for task_info in tsm.finished:
+            identifier = task_info.task.identifier
+            str_identifier = str(identifier)
 
             early_state = {
-                'name': task.identifier,
+                'name': identifier,
                 'job_logdir': job.logdir,
                 'job_unique_id': job.unique_id,
             }
@@ -112,19 +146,11 @@ class Runner(RunnerInterface):
                                                     job.result,
                                                     early_state)
 
-            task.status_services = []
-            for status in task.run():
-                status_repo.process_message(status)
-                result_dispatcher.map_method('test_progress', False)
-
-                if status['status'] not in ["started", "running"]:
-                    break
-
             # test execution time is currently missing
             # since 358e800e81 all runners all produce the result in a key called
             # 'result', instead of 'status'.  But the Avocado result plugins rely
             # on the current runner approach
-            this_task_data = status_repo.get_task_data(task.identifier)
+            this_task_data = self.status_repo.get_task_data(str_identifier)
             test_state = {'status': this_task_data[-1]['result'].upper()}
             test_state.update(early_state)
 
@@ -141,7 +167,7 @@ class Runner(RunnerInterface):
             # Populate task dir
             base_path = os.path.join(job.logdir, 'test-results')
             self._populate_task_logdir(base_path,
-                                       task,
+                                       task_info.task,
                                        this_task_data,
                                        job.config.get('core.debug'))
 
