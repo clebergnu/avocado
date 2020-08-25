@@ -44,6 +44,13 @@ class RunnerInit(Init):
                                  help_msg=help_msg,
                                  key_type=bool)
 
+        help_msg = 'URI for the status server, usually a "HOST:PORT" string'
+        settings.register_option(section=section,
+                                 key='status_server_uri',
+                                 default='127.0.0.1:8888',
+                                 metavar="HOST:PORT",
+                                 help_msg=help_msg)
+
 
 class Runner(RunnerInterface):
 
