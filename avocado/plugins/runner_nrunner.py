@@ -167,7 +167,9 @@ class Runner(RunnerInterface):
         loop = asyncio.get_event_loop()
         loop.run_until_complete(asyncio.gather(*workers))
 
-        for runtime_task in tsm.finished:
+        # using reversed to give the last tasks more time to submit the
+        # final status
+        for runtime_task in reversed(tsm.finished):
             identifier = runtime_task.task.identifier
             str_identifier = str(identifier)
 
