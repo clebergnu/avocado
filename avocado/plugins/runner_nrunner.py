@@ -127,7 +127,6 @@ class Runner(RunnerInterface):
                              None,
                              no_digits)
             task.identifier = test_id
-            task.status_services.append(nrunner.TaskStatusService(status_server_uri))
             result.append(RuntimeTask(task))
         return result
 
