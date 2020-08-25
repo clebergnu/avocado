@@ -20,6 +20,8 @@ import asyncio
 import json
 import multiprocessing
 import os
+import random
+import time
 from copy import copy
 
 from avocado.core import nrunner
@@ -141,12 +143,6 @@ class Runner(RunnerInterface):
     def run_suite(self, job, test_suite):
         summary = set()
 
-        # FIXME: re-enable job wide timeout
-        # if job.timeout > 0:
-        #     deadline = time.time() + job.timeout
-        # else:
-        #     deadline = None
-
         test_suite.tests, _ = nrunner.check_tasks_requirements(test_suite.tests)
         job.result.tests_total = test_suite.size  # no support for variants yet
         result_dispatcher = job.result_events_dispatcher
@@ -154,9 +150,15 @@ class Runner(RunnerInterface):
         status_server_uri = test_suite.config.get('nrunner.status_server_uri')
         self._start_status_server(status_server_uri)
 
-        tasks_info = self._get_all_runtime_tasks(test_suite,
-                                                 status_server_uri)
-        tsm = TaskStateMachine(tasks_info)
+        # FIXME: remove this and use another way to alow the job
+        # result[events] to be updated
+        self.status_repo.job = job
+
+        tasks = self._get_all_runtime_tasks(test_suite,
+                                            status_server_uri)
+        if test_suite.config.get('nrunner.shuffle'):
+            random.shuffle(tasks)
+        tsm = TaskStateMachine(tasks)
         spawner_name = test_suite.config.get('nrunner.spawner')
         spawner = SpawnerDispatcher()[spawner_name].obj
         max_running = test_suite.config.get('nrunner.max_parallel_tasks')
@@ -164,50 +166,15 @@ class Runner(RunnerInterface):
         workers = [Worker(tsm, spawner, max_running=max_running).run()
                    for _ in range(number_of_workers)]
         loop = asyncio.get_event_loop()
-        loop.run_until_complete(asyncio.gather(*workers))
 
-        # using reversed to give the last tasks more time to submit the
-        # final status
-        for runtime_task in reversed(tsm.finished):
-            identifier = runtime_task.task.identifier
-            str_identifier = str(identifier)
+        try:
+            loop.run_until_complete(asyncio.wait_for(asyncio.gather(*workers),
+                                                     job.timeout or None))
+        except (KeyboardInterrupt, asyncio.TimeoutError):
+            summary.add("INTERRUPTED")
 
-            early_state = {
-                'name': identifier,
-                'job_logdir': job.logdir,
-                'job_unique_id': job.unique_id,
-            }
-            job.result.start_test(early_state)
-            job.result_events_dispatcher.map_method('start_test',
-                                                    job.result,
-                                                    early_state)
-
-            # test execution time is currently missing
-            # since 358e800e81 all runners all produce the result in a key called
-            # 'result', instead of 'status'.  But the Avocado result plugins rely
-            # on the current runner approach
-            this_task_data = self.status_repo.get_task_data(str_identifier)
-            test_state = {'status': this_task_data[-1]['result'].upper()}
-            test_state.update(early_state)
-
-            time_start = this_task_data[0]['time']
-            time_end = this_task_data[-1]['time']
-            time_elapsed = time_end - time_start
-            test_state['time_start'] = time_start
-            test_state['time_end'] = time_end
-            test_state['time_elapsed'] = time_elapsed
-
-            # fake log dir, needed by some result plugins such as HTML
-            test_state['logdir'] = ''
-
-            # Populate task dir
-            base_path = os.path.join(job.logdir, 'test-results')
-            self._populate_task_logdir(base_path,
-                                       runtime_task.task,
-                                       this_task_data,
-                                       job.config.get('core.debug'))
-
-            job.result.check_test(test_state)
-            result_dispatcher.map_method('end_test', job.result, test_state)
+        # FIXME: add method to wait for the last status to arrive on
+        # the status repo
+        time.sleep(0.1)
         job.result.end_tests()
         return summary

@@ -1,3 +1,4 @@
+import os
 from .utils import json_loads
 
 
@@ -21,13 +22,66 @@ class StatusRepo:
         self._by_result = {}
 
     def _handle_task_finished(self, message):
+        # SAME BLOCK ON _handle_task_finished
+        class FakeId:
+            str_uid = message.get('id').split('-')[1]
+            name = message.get('id').split('-', 2)[2]
+            str_variant = ''
+        early_state = {
+                'name': FakeId, #message.get('id'),
+                'job_logdir': self.job.logdir,
+                'job_unique_id': self.job.unique_id,
+            }
+        # SAME BLOCK ON _handle_task_finished
+
+        this_task_data = self._all_data[message.get('id')]
+
+        # FIXME: this is *assuming* a result
+        test_state = {'status': message['result'].upper()}
+        test_state.update(early_state)
+
+        time_start = this_task_data[0]['time']
+        time_end = message['time']
+        time_elapsed = time_end - time_start
+        test_state['time_start'] = time_start
+        test_state['time_end'] = time_end
+        test_state['time_elapsed'] = time_elapsed
+
+        # fake log dir, needed by some result plugins such as HTML
+        test_state['logdir'] = ''
+
+        self.job.result.check_test(test_state)
+        self.job.result_events_dispatcher.map_method('end_test', self.job.result, test_state)
         self._set_by_result(message)
         self._set_task_data(message)
 
     def _handle_task_started(self, message):
         if 'output_dir' not in message:
             raise StatusMsgMissingDataError('output_dir')
+
+        # SAME BLOCK ON _handle_task_finished
+        class FakeId:
+            try:
+                str_uid = message.get('id').split('-')[1]
+            except:
+                str_uid = 'ERROR str_uid'
+            try:
+                name = message.get('id').split('-', 2)[2]
+            except:
+                name = 'ERROR name'
+            str_variant = ''
+        early_state = {
+                'name': FakeId, #message.get('id'),
+                'job_logdir': self.job.logdir,
+                'job_unique_id': self.job.unique_id,
+            }
+        # SAME BLOCK ON _handle_task_finished
+
         self._set_task_data(message)
+        self.job.result.start_test(early_state)
+        self.job.result_events_dispatcher.map_method('start_test',
+                                                     self.job.result,
+                                                     early_state)
 
     def _set_by_result(self, message):
         """Sets an entry in the aggregate by result.
