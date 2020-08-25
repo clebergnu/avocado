@@ -17,6 +17,7 @@ NRunner based implementation of job compliant runner
 """
 
 import json
+import multiprocessing
 import os
 import time
 from copy import copy
@@ -49,6 +50,15 @@ class RunnerInit(Init):
                                  key='status_server_uri',
                                  default='127.0.0.1:8888',
                                  metavar="HOST:PORT",
+                                 help_msg=help_msg)
+
+        help_msg = ('Number of maximum number tasks running in parallel. You '
+                    'can disable parallel execution by setting this to 1. '
+                    'Defaults to the amount of CPUs on this machine.')
+        settings.register_option(section=section,
+                                 key='max_parallel_tasks',
+                                 default=multiprocessing.cpu_count(),
+                                 key_type=int,
                                  help_msg=help_msg)
 
 
