@@ -61,6 +61,13 @@ class RunnerInit(Init):
                                  key_type=int,
                                  help_msg=help_msg)
 
+        help_msg = ("Spawn tasks in a specific spawner. Available spawners: "
+                    "'process' and 'podman'")
+        settings.register_option(section=section,
+                                 key="spawner",
+                                 default='process',
+                                 help_msg=help_msg)
+
 
 class Runner(RunnerInterface):
 
