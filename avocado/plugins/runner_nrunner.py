@@ -22,10 +22,27 @@ import time
 from copy import copy
 
 from avocado.core import nrunner
+from avocado.core.plugin_interfaces import Init
 from avocado.core.plugin_interfaces import Runner as RunnerInterface
+from avocado.core.settings import settings
 from avocado.core.status.repo import StatusRepo
 from avocado.core.task.runtime import RuntimeTask
 from avocado.core.test_id import TestID
+
+
+class RunnerInit(Init):
+
+    name = 'nrunner'
+    description = '*EXPERIMENTAL* nrunner initialization'
+
+    def initialize(self):
+        section = 'nrunner'
+        help_msg = 'Shuffle the tasks to be executed'
+        settings.register_option(section=section,
+                                 key='shuffle',
+                                 default=False,
+                                 help_msg=help_msg,
+                                 key_type=bool)
 
 
 class Runner(RunnerInterface):
