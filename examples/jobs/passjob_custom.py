@@ -5,8 +5,10 @@ from avocado.core.suite import TestSuite
 
 job_config = {'run.test_runner': 'nrunner'}
 
-config1 = {'run.references': ['examples/tests/passtest.py:PassTest.test']}
-config2 = {'run.references': ['examples/tests/passtest.py:PassTest.test']}
+config1 = {'run.references': ['examples/tests/passtest.py:PassTest.test'],
+           'nrunner.status_server_uri': '127.0.0.1:8890'}
+config2 = {'run.references': ['examples/tests/passtest.py:PassTest.test'],
+           'nrunner.status_server_uri': '127.0.0.1:8891'}
 
 # Custom method (no discovery, no guess, no magic)
 # Since there is no magic, we need to pass a suite name, otherwise a uuid4 will

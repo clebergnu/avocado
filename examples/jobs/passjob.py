@@ -4,6 +4,7 @@ import sys
 from avocado.core.job import Job
 
 job_config = {'run.test_runner': 'nrunner',
+              'nrunner.status_server_uri': '127.0.0.1:8889',
               'run.references': ['examples/tests/passtest.py:PassTest.test']}
 
 # Automatic helper method (Avocado will try to discovery things from config
