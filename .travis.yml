@@ -18,6 +18,7 @@ env:
 addons:
   apt:
     packages:
+    - hunspell-en-us
     - golang
 
 install:
