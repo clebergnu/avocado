@@ -87,8 +87,8 @@ jobs:
         - python3 setup.py develop --user
       script:
         - python3 -m avocado --help
-        - python3 -m avocado nlist --verbose selftests/unit/* selftests/functional/* selftests/*sh
-        - python3 -m unittest discover -v selftests.unit
+        - python3 -m avocado list --resolver selftests/unit/* selftests/functional/* selftests/*sh
+        - python3 -m avocado run --test-runner=nrunner --ignore-missing-references -- selftests/unit/* selftests/functional/* selftests/*sh /bin/true
 
   allow_failures:
     - python: "nightly"
