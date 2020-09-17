@@ -17,7 +17,6 @@ class JobTest(unittest.TestCase):
 
     def setUp(self):
         self.job = None
-        data_dir._tmp_tracker.unittest_refresh_dir_tracker()
         prefix = temp_dir_prefix(__name__, self, 'setUp')
         self.tmpdir = tempfile.TemporaryDirectory(prefix=prefix)
 
@@ -342,7 +341,6 @@ class JobTest(unittest.TestCase):
             self.assertIsInstance(self.job.test_suite.tests[0], nrunner.Task)
 
     def tearDown(self):
-        data_dir._tmp_tracker.unittest_refresh_dir_tracker()
         self.tmpdir.cleanup()
         if self.job is not None:
             self.job.cleanup()
