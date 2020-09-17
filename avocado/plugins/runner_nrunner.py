@@ -128,6 +128,10 @@ class Runner(RunnerInterface):
             stderr = last.pop('stderr')
         except KeyError:
             stderr = None
+        try:
+            output = last.pop('output')
+        except KeyError:
+            output = None
 
         # Create task dir
         task_path = os.path.join(base_path, task.identifier.str_filesystem)
@@ -140,6 +144,9 @@ class Runner(RunnerInterface):
         if stderr is not None:
             stderr_file = os.path.join(task_path, 'stderr')
             self._save_to_file(stderr_file, stderr)
+        if output is not None:
+            output_file = os.path.join(task_path, 'output')
+            self._save_to_file(output_file, output)
 
         # Save debug
         if debug:

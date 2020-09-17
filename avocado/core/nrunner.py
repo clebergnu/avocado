@@ -489,13 +489,13 @@ class PythonUnittestRunner(BaseRunner):
         stream.seek(0)
         output = {'status': 'finished',
                   'result': result,
-                  'output': stream.read()}
+                  'output': stream.read().encode()}
         stream.close()
         queue.put(output)
 
     def run(self):
         if not self.runnable.uri:
-            error_msg = 'uri is required but was not given'
+            error_msg = b'uri is required but was not given'
             yield self.prepare_status('finished', {'result': 'error',
                                                    'output': error_msg})
             return
