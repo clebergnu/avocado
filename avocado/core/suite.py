@@ -19,13 +19,10 @@ from uuid import uuid4
 from .dispatcher import RunnerDispatcher
 from .exceptions import (JobTestSuiteReferenceResolutionError,
                          OptionValidationError)
-from .loader import (DiscoverMode, LoaderError, LoaderUnhandledReferenceError,
-                     loader)
 from .parser import HintParser
 from .resolver import resolve
 from .settings import settings
 from .tags import filter_test_tags
-from .test import DryRunTest, Test
 from .utils import resolutions_to_tasks
 from .varianter import Varianter
 
@@ -61,10 +58,6 @@ class TestSuite:
         self._runner = None
         self._test_parameters = None
 
-        if (config.get('run.dry_run.enabled') and
-                self.config.get('run.test_runner') == 'runner'):
-            self._convert_to_dry_run()
-
     def __len__(self):
         """This is a convenient method to run `len()` over this object.
 
@@ -73,47 +66,8 @@ class TestSuite:
         """
         return self.size
 
-    def _convert_to_dry_run(self):
-        for i in range(self.size):
-            self.tests[i] = [DryRunTest, self.tests[i][1]]
-
     @classmethod
-    def _from_config_with_loader(cls, config, name=None):
-        references = config.get('run.references')
-        ignore_missing = config.get('run.ignore_missing_references')
-        verbose = config.get('core.verbose')
-        subcommand = config.get('subcommand')
-
-        # To-be-removed: For some reason, avocado list will display more tests
-        # if in verbose mode. IMO, this is a little inconsistent with the 'run'
-        # command.  This hack was needed to make one specific test happy.
-        tests_mode = DiscoverMode.DEFAULT
-        if subcommand == 'list':
-            if verbose:
-                tests_mode = DiscoverMode.ALL
-            else:
-                tests_mode = DiscoverMode.AVAILABLE
-
-        try:
-            loader.load_plugins(config)
-            tests = loader.discover(references,
-                                    force=ignore_missing,
-                                    which_tests=tests_mode)
-            if config.get("filter.by_tags.tags"):
-                tests = filter_test_tags(
-                    tests,
-                    config.get("filter.by_tags.tags"),
-                    config.get("filter.by_tags.include_empty"),
-                    config.get('filter.by_tags.include_empty_key'))
-        except (LoaderUnhandledReferenceError, LoaderError) as details:
-            raise TestSuiteError(details)
-
-        if name is None:
-            name = str(uuid4())
-        return cls(name=name, config=config, tests=tests)
-
-    @classmethod
-    def _from_config_with_resolver(cls, config, name=None):
+    def _from_config(cls, config, name=None):
         ignore_missing = config.get('run.ignore_missing_references')
         references = config.get('run.references')
         try:
@@ -134,40 +88,6 @@ class TestSuite:
         return cls(name=name, config=config, tests=tasks,
                    resolutions=resolutions)
 
-    def _get_stats_from_nrunner(self):
-        stats = {}
-        for test in self.tests:
-            stats = self._increment_dict_key_counter(stats, test.runnable.kind)
-        return stats
-
-    def _get_stats_from_runner(self):
-        stats = {}
-        mapping = loader.get_type_label_mapping()
-
-        for cls, _ in self.tests:
-            if isinstance(cls, str):
-                cls = Test
-            stats = self._increment_dict_key_counter(stats, mapping[cls])
-        return stats
-
-    def _get_tags_stats_from_nrunner(self):
-        stats = {}
-        for test in self.tests:
-            if test.runnable is None:
-                continue
-            tags = test.runnable.tags or {}
-            for tag in tags:
-                stats = self._increment_dict_key_counter(stats, tag)
-        return stats
-
-    def _get_tags_stats_from_runner(self):
-        stats = {}
-        for test in self.tests:
-            params = test[1]
-            for tag in params.get('tags', {}):
-                stats = self._increment_dict_key_counter(stats, tag)
-        return stats
-
     @staticmethod
     def _increment_dict_key_counter(dict_object, key):
         try:
@@ -185,7 +105,7 @@ class TestSuite:
     @property
     def runner(self):
         if self._runner is None:
-            runner_name = self.config.get('run.test_runner') or 'runner'
+            runner_name = self.config.get('run.test_runner') or 'nrunner'
             try:
                 runner_extension = RunnerDispatcher()[runner_name]
                 self._runner = runner_extension.obj
@@ -203,12 +123,10 @@ class TestSuite:
     @property
     def stats(self):
         """Return a statistics dict with the current tests."""
-        runner_name = self.config.get('run.test_runner') or 'runner'
-        if runner_name == 'runner':
-            return self._get_stats_from_runner()
-        elif runner_name == 'nrunner':
-            return self._get_stats_from_nrunner()
-        return {}
+        stats = {}
+        for test in self.tests:
+            stats = self._increment_dict_key_counter(stats, test.runnable.kind)
+        return stats
 
     @property
     def status(self):
@@ -224,12 +142,14 @@ class TestSuite:
     @property
     def tags_stats(self):
         """Return a statistics dict with the current tests tags."""
-        runner_name = self.config.get('run.test_runner') or 'runner'
-        if runner_name == 'runner':
-            return self._get_tags_stats_from_runner()
-        elif runner_name == 'nrunner':
-            return self._get_tags_stats_from_nrunner()
-        return {}
+        stats = {}
+        for test in self.tests:
+            if test.runnable is None:
+                continue
+            tags = test.runnable.tags or {}
+            for tag in tags:
+                stats = self._increment_dict_key_counter(stats, tag)
+        return stats
 
     @property
     def test_parameters(self):
@@ -292,11 +212,7 @@ class TestSuite:
         config.update(suite_config)
         if job_config:
             config.update(job_config)
-        runner = config.get('run.test_runner') or 'runner'
-        if runner == 'nrunner':
-            suite = cls._from_config_with_resolver(config, name)
-        else:
-            suite = cls._from_config_with_loader(config, name)
+        suite = cls._from_config(config, name)
 
         if not config.get('run.ignore_missing_references'):
             if not suite.tests:

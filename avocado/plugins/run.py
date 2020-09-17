@@ -19,7 +19,7 @@ Base Test Runner Plugins.
 import argparse
 import sys
 
-from avocado.core import exit_codes, job, loader, output, parser_common_args
+from avocado.core import exit_codes, job, output, parser_common_args
 from avocado.core.dispatcher import JobPrePostDispatcher
 from avocado.core.output import LOG_UI
 from avocado.core.plugin_interfaces import CLICmd, Init
@@ -102,7 +102,7 @@ class Run(CLICmd):
                     'the conventional and traditional runner.')
         settings.register_option(section='run',
                                  key='test_runner',
-                                 default='runner',
+                                 default='nrunner',
                                  help_msg=help_msg,
                                  parser=parser,
                                  long_arg='--test-runner')
@@ -265,7 +265,6 @@ class Run(CLICmd):
                                  parser=out_check,
                                  long_arg='--disable-output-check')
 
-        loader.add_loader_options(parser, 'run')
         parser_common_args.add_tag_filter_args(parser)
 
     def run(self, config):

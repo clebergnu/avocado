@@ -15,7 +15,7 @@
 
 import os
 
-from avocado.core import exit_codes, loader, parser_common_args
+from avocado.core import exit_codes, parser_common_args
 from avocado.core.output import LOG_UI, TERM_SUPPORT
 from avocado.core.plugin_interfaces import CLICmd
 from avocado.core.resolver import ReferenceResolutionResult
@@ -100,33 +100,7 @@ class List(CLICmd):
                     LOG_UI.info("%s: %s", key, suite.tags_stats[key])
 
     @staticmethod
-    def _get_test_matrix(suite):
-        """Used for loader."""
-        test_matrix = []
-
-        type_label_mapping = loader.loader.get_type_label_mapping()
-        decorator_mapping = loader.loader.get_decorator_mapping()
-
-        verbose = suite.config.get('core.verbose')
-        for cls, params in suite.tests:
-            if isinstance(cls, str):
-                cls = Test
-            type_label = type_label_mapping[cls]
-            decorator = decorator_mapping[cls]
-            type_label = decorator(type_label)
-
-            if verbose:
-                test_matrix.append((type_label,
-                                    params['name'],
-                                    _get_test_tags((cls, params))))
-            else:
-                test_matrix.append((type_label, params['name']))
-
-        return test_matrix
-
-    @staticmethod
     def _get_resolution_matrix(suite):
-        """Used for resolver."""
         test_matrix = []
         verbose = suite.config.get('core.verbose')
         for test in suite.tests:
@@ -181,21 +155,8 @@ class List(CLICmd):
                                  help_msg=help_msg,
                                  parser=parser,
                                  positional_arg=True)
-        loader.add_loader_options(parser, 'list')
 
-        help_msg = ('What is the method used to detect tests? If --resolver '
-                    'used, Avocado will use the Next Runner Resolver method. '
-                    'If not the legacy one will be used.')
-        settings.register_option(section='list',
-                                 key='resolver',
-                                 key_type=bool,
-                                 default=False,
-                                 help_msg=help_msg,
-                                 parser=parser,
-                                 long_arg='--resolver')
-
-        help_msg = ('Writes runnable recipe files to a directory. Valid only '
-                    'when using --resolver.')
+        help_msg = 'Writes runnable recipe files to a directory.'
         settings.register_option(section='list.recipes',
                                  key='write_to_directory',
                                  default=None,
@@ -207,22 +168,16 @@ class List(CLICmd):
         parser_common_args.add_tag_filter_args(parser)
 
     def run(self, config):
-        runner = 'nrunner' if config.get('list.resolver') else 'runner'
         config['run.references'] = config.get('list.references')
         config['run.ignore_missing_references'] = True
-        config['run.test_runner'] = runner
         try:
             suite = TestSuite.from_config(config)
-            if runner == 'nrunner':
-                matrix = self._get_resolution_matrix(suite)
-                self._display(suite, matrix)
+            matrix = self._get_resolution_matrix(suite)
+            self._display(suite, matrix)
 
-                directory = config.get('list.recipes.write_to_directory')
-                if directory is not None:
-                    self.save_recipes(suite, directory, len(matrix))
-            else:
-                matrix = self._get_test_matrix(suite)
-                self._display(suite, matrix)
+            directory = config.get('list.recipes.write_to_directory')
+            if directory is not None:
+                self.save_recipes(suite, directory, len(matrix))
         except KeyboardInterrupt:
             LOG_UI.error('Command interrupted by user...')
             return exit_codes.AVOCADO_FAIL
