@@ -579,6 +579,8 @@ class StatusEncoder(json.JSONEncoder):
     def default(self, o):
         if isinstance(o, bytes):
             return {'__base64_encoded__': base64.b64encode(o).decode('ascii')}
+        if hasattr(o, 'str_filesystem'):
+            return str(o)
         return json.JSONEncoder.default(self, o)
 
 
@@ -709,6 +711,10 @@ class Task:
             for status_service in self.status_services:
                 status_service.post(status)
             yield status
+
+    def autorun(self):
+        for _ in self.run():
+            pass
 
 
 class BaseRunnerApp:

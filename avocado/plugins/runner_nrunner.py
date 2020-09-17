@@ -236,6 +236,8 @@ class Runner(RunnerInterface):
 
         status_server_uri = test_suite.config.get('nrunner.status_server_uri')
         self._start_status_server(status_server_uri)
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(asyncio.sleep(0.05))
 
         # pylint: disable=W0201
         self.tasks = self._get_all_runtime_tasks(test_suite)
@@ -248,7 +250,6 @@ class Runner(RunnerInterface):
         workers = [Worker(tsm, spawner, max_running=max_running).run()
                    for _ in range(max_running)]
         asyncio.ensure_future(self._update_status(job))
-        loop = asyncio.get_event_loop()
         try:
             loop.run_until_complete(asyncio.wait_for(asyncio.gather(*workers),
                                                      job.timeout or None))
