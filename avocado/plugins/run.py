@@ -71,16 +71,12 @@ class Run(CLICmd):
         """
         parser = super(Run, self).configure(parser)
 
-        help_msg = 'List of test references (aliases or paths)'
-        settings.register_option(section='run',
-                                 key='references',
-                                 key_type=list,
-                                 default=[],
-                                 nargs='*',
-                                 metavar='TEST_REFERENCE',
-                                 parser=parser,
-                                 help_msg=help_msg,
-                                 positional_arg=True)
+        settings.add_argparser_to_option(namespace='resolver.references',
+                                         nargs='*',
+                                         metavar='TEST_REFERENCE',
+                                         parser=parser,
+                                         positional_arg=True,
+                                         long_arg=None)
 
         help_msg = ('Parameter name and value to pass to all tests. This is '
                     'only applicable when not using a varianter plugin. '
