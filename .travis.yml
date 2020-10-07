@@ -83,6 +83,7 @@ jobs:
         - /c/Python39/python setup.py develop --user
       script:
         - /c/Python39/python -m avocado --help
+        - /c/Python39/python -m avocado run --test-runner=nrunner examples/tests/passtest.py
     - name: "Ad hoc checks on OS X"
       os: osx
       language: c
