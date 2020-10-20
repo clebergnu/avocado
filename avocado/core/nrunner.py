@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+import asyncio
 import base64
 import collections
 import inspect
@@ -373,7 +374,24 @@ class ExecRunner(BaseRunner):
      * kwargs: key=val to be set as environment variables to the
        process
     """
-    def run(self):
+    @staticmethod
+    async def _read_lines_until(fileobj, timeout):
+        data = b''
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            try:
+                data += await asyncio.wait_for(fileobj.readline(),
+                                               timeout)
+            except asyncio.TimeoutError:
+                break
+        return data
+
+    async def run_async(self, callback=None):
+        async for event in self.run_generator():
+            if callback:
+                callback(event)
+
+    async def run_generator(self):
         env = None
         if self.runnable.kwargs:
             current = dict(os.environ)
@@ -382,35 +400,52 @@ class ExecRunner(BaseRunner):
 
         if env and 'PATH' not in env:
             env['PATH'] = os.environ.get('PATH')
-        process = subprocess.Popen(
-            [self.runnable.uri] + list(self.runnable.args),
+
+        process = await asyncio.create_subprocess_exec(
+            self.runnable.uri,
+            *self.runnable.args,
             stdin=subprocess.DEVNULL,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             env=env)
 
-        yield self.prepare_status('started')
         most_current_execution_state_time = None
-        while process.poll() is None:
-            time.sleep(RUNNER_RUN_CHECK_INTERVAL)
-            now = time.monotonic()
-            if most_current_execution_state_time is not None:
-                next_execution_state_mark = (most_current_execution_state_time +
-                                             RUNNER_RUN_STATUS_INTERVAL)
-            if (most_current_execution_state_time is None or
+        yield self.prepare_status('started')
+        while True:
+            if process.returncode is not None:
+                break
+            send_update = False
+            try:
+                await asyncio.wait_for(process.wait(),
+                                       RUNNER_RUN_STATUS_INTERVAL)
+            except asyncio.TimeoutError:
+                send_update = True
+
+            if send_update:
+                now = time.monotonic()
+                if most_current_execution_state_time is not None:
+                    next_execution_state_mark = (most_current_execution_state_time +
+                                                 RUNNER_RUN_STATUS_INTERVAL)
+                if (most_current_execution_state_time is None or
                     now > next_execution_state_mark):
-                most_current_execution_state_time = now
-                yield self.prepare_status('running')
+                    most_current_execution_state_time = now
+                stdout = await self._read_lines_until(process.stdout,
+                                                      RUNNER_RUN_STATUS_INTERVAL / 2)
+                stderr = await self._read_lines_until(process.stderr,
+                                                      RUNNER_RUN_STATUS_INTERVAL / 2)
+                yield self.prepare_status('running',
+                                          {'stdout': stdout,
+                                           'stderr': stderr})
 
-        stdout = process.stdout.read()
-        process.stdout.close()
-        stderr = process.stderr.read()
-        process.stderr.close()
-
-        return_code = process.returncode
-        yield self.prepare_status('finished', {'returncode': return_code,
+        stdout = await process.stdout.read()
+        stderr = await process.stderr.read()
+        yield self.prepare_status('finished', {'returncode': process.returncode,
                                                'stdout': stdout,
                                                'stderr': stderr})
+
+    def run(self):
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(self.run_async())
 
 
 RUNNERS_REGISTRY_PYTHON_CLASS['exec'] = ExecRunner
@@ -426,13 +461,13 @@ class ExecTestRunner(ExecRunner):
 
     Runnable attributes usage is identical to :class:`ExecRunner`
     """
-    def run(self):
+    async def run_generator(self):
         # Since Runners are standalone, and could be executed on a remote
         # machine in an "isolated" way, there is no way to assume a default
         # value, at this moment.
         skip_codes = self.runnable.config.get('runner.exectest.exitcodes.skip',
                                               [])
-        for most_current_execution_state in super(ExecTestRunner, self).run():
+        async for most_current_execution_state in super(ExecTestRunner, self).run_generator():
             returncode = most_current_execution_state.get('returncode')
             if returncode is not None:
                 if returncode in skip_codes:
@@ -716,6 +751,23 @@ class Task:
 
         return args
 
+    async def run_async(self, callback=None):
+        async for status in self.run_generator():
+            if callback is not None:
+                callback(status)
+
+    async def run_generator(self):
+        self.setup_output_dir()
+        runner_klass = self.runnable.pick_runner_class(self.known_runners)
+        runner = runner_klass(self.runnable)
+        async for status in runner.run_generator():
+            if status['status'] == 'started':
+                status.update({'output_dir': self.output_dir})
+            status.update({"id": self.identifier})
+            for status_service in self.status_services:
+                status_service.post(status)
+            yield status
+
     def run(self):
         self.setup_output_dir()
         runner_klass = self.runnable.pick_runner_class(self.known_runners)
@@ -914,8 +966,12 @@ class BaseRunnerApp:
         """
         runnable = Runnable.from_args(args)
         runner = self.get_runner_from_runnable(runnable)
-        for status in runner.run():
-            self.echo(status)
+        if hasattr(runner, 'run_async'):
+            loop = asyncio.get_event_loop()
+            loop.run_until_complete(runner.run_async(self.echo))
+        else:
+            for status in runner.run():
+                self.echo(status)
 
     def command_runnable_run_recipe(self, args):
         """
@@ -940,8 +996,12 @@ class BaseRunnerApp:
         task = Task(args.get('identifier'), runnable,
                     args.get('status_uri', []),
                     known_runners=self.RUNNABLE_KINDS_CAPABLE)
-        for status in task.run():
-            self.echo(status)
+        if hasattr(task, 'run_async'):
+            loop = asyncio.get_event_loop()
+            loop.run_until_complete(task.run_async(self.echo))
+        else:
+            for status in task.run():
+                self.echo(status)
 
     def command_task_run_recipe(self, args):
         """
