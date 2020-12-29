@@ -703,12 +703,15 @@ class Task:
         if known_runners is None:
             known_runners = {}
         self.known_runners = known_runners
+        self.prereqs = []
         self.spawn_handle = None
         self.output_dir = None
 
     def __repr__(self):
-        fmt = '<Task identifier="{}" runnable="{}" status_services="{}"'
-        return fmt.format(self.identifier, self.runnable, self.status_services)
+        fmt = ('<Task identifier="{}" runnable="{}" prereqs="{}"'
+               ' status_services="{}"')
+        return fmt.format(self.identifier, self.runnable, self.prereqs,
+                          self.status_services)
 
     def are_requirements_available(self, runners_registry=None):
         """Verifies if requirements needed to run this task are available.
