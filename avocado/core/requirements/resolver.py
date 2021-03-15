@@ -41,10 +41,8 @@ class PackageRequirement(BaseRequirement):
         runnable = Runnable('requirement', 'avocado-software-manager',
                             'install',
                             self._requirement['name'])
-        task_id = 'requirement-%s-%s' % (self._requirement['type'],
-                                         self._requirement['name'])
         # create the new software-manager task for the requirement
-        task = Task(task_id, runnable,
+        task = Task(None, runnable,
                     status_uris=self._uris,
                     known_runners=RUNNERS_REGISTRY_PYTHON_CLASS)
         return task
