@@ -82,18 +82,13 @@ class Worker:
 
         # right now, support triage based on requirements only
         if runtime_task.task.prereqs:
-            finished_tasks_ids = [rt_task.task.identifier for rt_task
-                                  in self._state_machine.finished]
-            for prereq in runtime_task.task.prereqs:
-                if prereq in finished_tasks_ids:
-                    runtime_task.task.prereqs.remove(prereq)
-            # check if the last task was removed
-            if runtime_task.task.prereqs:
-                async with self._state_machine.lock:
+            async with self._state_machine.lock:
+                finished_tasks = [rt_task.task for rt_task in self._state_machine.finished]
+                if not set(runtime_task.task.prereqs).issubset(finished_tasks):
                     self._state_machine.triaging.append(runtime_task)
                     runtime_task.status = 'WAITING PRE-REQS'
-                await asyncio.sleep(0.1)
-                return
+                    await asyncio.sleep(0.1)
+                    return
 
         async with self._state_machine.lock:
             self._state_machine.ready.append(runtime_task)

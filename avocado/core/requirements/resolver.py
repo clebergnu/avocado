@@ -83,7 +83,7 @@ class RequirementsResolver:
                 # add the new task to the requirements tasks list
                 requirements_tasks.append(requirement_task)
                 # update the dependency list of the father task
-                task.prereqs.append(requirement_task.identifier)
+                task.prereqs.append(requirement_task)
         # update the tasks list with the new requirements tasks
         tasks.extend(requirements_tasks)
         return tasks
