@@ -1,0 +1,11 @@
+fedora_selftests_task:
+    selftests_script:
+       - dnf -y module enable avocado:latest
+       - dnf -y install dnf-plugins-core git findutils make which
+       - dnf -y builddep python-avocado
+       - make develop
+       - PATH=$HOME/.local/bin:$PATH LANG=en_US.UTF-8 AVOCADO_CHECK_LEVEL=0 python3 selftests/check.py --disable-static-checks
+    container:
+        matrix:
+          - image: fedora:32
+          - image: fedora:33
