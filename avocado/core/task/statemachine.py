@@ -1,6 +1,10 @@
 import asyncio
+import logging
 import multiprocessing
 import time
+
+
+LOG = logging.getLogger("avocado.task.statemachine")
 
 
 class TaskStateMachine:
@@ -59,6 +63,13 @@ class Worker:
             max_running = 2 * multiprocessing.cpu_count() - 1
         self._max_running = max_running
         self._task_timeout = task_timeout
+        LOG.debug("Initialized: %s", self)
+
+    def __repr__(self):
+        fmt = ('<Worker spawner="{}" max_triaging={} max_running={} '
+               'task_timeout={}>')
+        return fmt.format(self._spawner, self._max_triaging,
+                          self._max_running, self._task_timeout)
 
     async def bootstrap(self):
         """Reads from requested, moves into triaging."""
@@ -67,6 +78,8 @@ class Worker:
                 if len(self._state_machine.triaging) < self._max_triaging:
                     runtime_task = self._state_machine.requested.pop(0)
                     self._state_machine.triaging.append(runtime_task)
+                    LOG.debug('Task "%s": requested -> triaging',
+                              runtime_task.task.identifier)
                 else:
                     return
         except IndexError:
@@ -82,6 +95,8 @@ class Worker:
 
         requirements_ok = await self._spawner.check_task_requirements(runtime_task)
         if requirements_ok:
+            LOG.debug('Task "%s": requirements OK',
+                      runtime_task.task.identifier)
             async with self._state_machine.lock:
                 self._state_machine.ready.append(runtime_task)
         else:
