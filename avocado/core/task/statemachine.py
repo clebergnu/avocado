@@ -2,6 +2,8 @@ import asyncio
 import multiprocessing
 import time
 
+from . import LOG
+
 
 class TaskStateMachine:
     """Represents all phases that a task can go through its life."""
@@ -59,6 +61,13 @@ class Worker:
             max_running = 2 * multiprocessing.cpu_count() - 1
         self._max_running = max_running
         self._task_timeout = task_timeout
+        LOG.debug("Initialized: %s", self)
+
+    def __repr__(self):
+        fmt = ('<Worker spawner="{}" max_triaging={} max_running={} '
+               'task_timeout={}>')
+        return fmt.format(self._spawner, self._max_triaging,
+                          self._max_running, self._task_timeout)
 
     async def bootstrap(self):
         """Reads from requested, moves into triaging."""
@@ -67,6 +76,8 @@ class Worker:
                 if len(self._state_machine.triaging) < self._max_triaging:
                     runtime_task = self._state_machine.requested.pop(0)
                     self._state_machine.triaging.append(runtime_task)
+                    LOG.debug('Task "%s": requested -> triaging',
+                              runtime_task.task.identifier)
                 else:
                     return
         except IndexError:
@@ -82,12 +93,16 @@ class Worker:
 
         requirements_ok = await self._spawner.check_task_requirements(runtime_task)
         if requirements_ok:
+            LOG.debug('Task "%s": requirements OK', runtime_task.task.identifier)
             async with self._state_machine.lock:
                 self._state_machine.ready.append(runtime_task)
+                LOG.debug('Task "%s": triaging -> ready', runtime_task.task.identifier)
         else:
             async with self._state_machine.lock:
                 self._state_machine.finished.append(runtime_task)
                 runtime_task.status = 'FAILED ON TRIAGE'
+            LOG.debug('Task "%s": triaging -> finished (%s)',
+                      runtime_task.task.identifier, runtime_task.status)
 
     async def start(self):
         """Reads from ready, moves into either: started or finished."""
@@ -107,20 +122,26 @@ class Worker:
                 self._state_machine.ready.insert(0, runtime_task)
                 runtime_task.status = 'WAITING'
                 should_wait = True
+                LOG.debug('Task "%s": %s', runtime_task.task.identifier,
+                          runtime_task.status)
         if should_wait:
             await asyncio.sleep(0.1)
             return
 
         start_ok = await self._spawner.spawn_task(runtime_task)
         if start_ok:
+            LOG.debug('Task "%s": started OK', runtime_task.task.identifier)
             runtime_task.status = None
             if self._task_timeout is not None:
                 runtime_task.execution_timeout = time.monotonic() + self._task_timeout
             async with self._state_machine.lock:
                 self._state_machine.started.append(runtime_task)
+            LOG.debug('Task "%s": ready -> started', runtime_task.task.identifier)
         else:
+            LOG.debug('Task "%s": started FAILED', runtime_task.task.identifier)
             async with self._state_machine.lock:
                 self._state_machine.finished.append(runtime_task)
+            LOG.debug('Task "%s": ready -> finished', runtime_task.task.identifier)
 
     async def monitor(self):
         """Reads from started, moves into finished."""
@@ -144,6 +165,8 @@ class Worker:
 
         async with self._state_machine.lock:
             self._state_machine.finished.append(runtime_task)
+        LOG.debug('Task "%s": started -> finished (%s)',
+                  runtime_task.task.identifier, runtime_task.status)
 
     async def run(self):
         """Pushes Tasks forward and makes them do something with their lives."""

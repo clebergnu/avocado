@@ -1,4 +1,5 @@
 from .utils import json_loads
+from . import LOG
 
 
 class StatusMsgMissingDataError(Exception):
@@ -48,6 +49,7 @@ class StatusRepo:
     def _set_task_data(self, message):
         """Appends all data on message to an entry keyed by the task's ID."""
         task_id = message.pop('id')
+        LOG.debug('Task "%s" message: "%s"', task_id, message)
         if task_id not in self._all_data:
             self._all_data[task_id] = []
         self._all_data[task_id].append(message)
