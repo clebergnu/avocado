@@ -221,14 +221,32 @@ class Runner(RunnerInterface):
     @staticmethod
     def _get_all_runtime_tasks(test_suite):
         runtime_tasks = []
-        no_digits = len(str(len(test_suite)))
+        test_result_total = test_suite.variants.get_number_of_tests(test_suite.tests)
+        no_digits = len(str(test_result_total))
         status_uris = [test_suite.config.get('nrunner.status_server_uri')]
-        for index, runnable in enumerate(test_suite.tests, start=1):
-            runtime_tasks.extend(Runner._create_runtime_tasks_for_test(test_suite,
-                                                                       runnable,
-                                                                       no_digits,
-                                                                       index,
-                                                                       status_uris))
+        execution_order = test_suite.config.get('run.execution_order')
+        if execution_order == "variants-per-test":
+            for index, (runnable, variant) in enumerate(((test, variant)
+                                                         for test in test_suite.tests
+                                                         for variant in test_suite.variants.itertests()),
+                                                        start=1):
+                runtime_tasks.extend(Runner._create_runtime_tasks_for_test(
+                    test_suite,
+                    runnable,
+                    no_digits,
+                    index,
+                    status_uris))
+        elif execution_order == "tests-per-variant":
+            for index, (runnable, variant) in enumerate(((test, variant)
+                                                         for variant in test_suite.variants.itertests()
+                                                         for test in test_suite.tests),
+                                                        start=1):
+                runtime_tasks.extend(Runner._create_runtime_tasks_for_test(
+                    test_suite,
+                    runnable,
+                    no_digits,
+                    index,
+                    status_uris))
         return runtime_tasks
 
     def _start_status_server(self, status_server_listen):
@@ -261,7 +279,7 @@ class Runner(RunnerInterface):
 
         test_suite.tests, _ = nrunner.check_runnables_runner_requirements(
             test_suite.tests)
-        job.result.tests_total = test_suite.size  # no support for variants yet
+        job.result.tests_total = test_suite.variants.get_number_of_tests(test_suite.tests)
 
         listen = test_suite.config.get('nrunner.status_server_listen')
         self._start_status_server(listen)
