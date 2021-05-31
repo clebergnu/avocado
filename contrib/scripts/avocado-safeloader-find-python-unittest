@@ -26,6 +26,7 @@ import sys
 
 from avocado.core.safeloader import find_python_unittests
 
+
 if __name__ == '__main__':
     test_module_paths = sys.argv[1:]
     result = []
@@ -42,4 +43,8 @@ if __name__ == '__main__':
             result += ["%s.%s.%s" % (test_module_name, klass, method_name)
                        for (method_name, _, _) in methods]
     if result:
+        if os.environ.get('AVOCADO_SAFELOADER_UNITTEST_ORDER_COMPAT', False):
+            from unittest.util import three_way_cmp
+            from functools import cmp_to_key
+            result.sort(key=cmp_to_key(three_way_cmp))
         print("\n".join(result))
