@@ -284,7 +284,23 @@ def find_python_tests(target_module, target_class, determine_match, path):
 
             modules_paths = [parent_path,
                              os.path.dirname(module.path)] + sys.path
-            found_spec = PathFinder.find_spec(parent_module, modules_paths)
+            found_spec = None
+            if not imported_symbol.is_relative():
+                 components = imported_symbol.module_path.split('.')
+                 parent_module = components[-1]
+                 for component in components[:-1]:
+                     paths_to_add = [os.path.join(path, component) for path in modules_paths]
+                     for path_to_add in paths_to_add:
+                         mods_paths = modules_paths[:]
+                         mods_paths.insert(0, path_to_add)
+                         found_spec = PathFinder.find_spec(parent_module, mods_paths)
+                         if found_spec:
+                             # Not a direct match because it includes
+                             # other submodules, so skip it
+                             if found_spec.submodule_search_locations:
+                                 found_spec = None
+                                 continue
+                             break
             if found_spec is None:
                 continue
             _info, _dis, _match = _examine_class(target_module,
