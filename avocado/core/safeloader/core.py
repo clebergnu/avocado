@@ -87,13 +87,13 @@ def _get_attributes_for_further_examination(parent, module):
             # We know 'parent.Class' or 'asparent.Class' and need
             # to get path and original_module_name. Class is given
             # by parent definition.
-            _parent = module.imported_objects.get(parent.value.id)
-            if _parent is None:
+            imported_symbol = module.imported_symbols.get(parent.value.id)
+            if imported_symbol is None:
                 # We can't examine this parent (probably broken
                 # module)
                 raise ClassNotSuitable
-            parent_path = os.path.dirname(_parent)
-            parent_module = os.path.basename(_parent)
+            parent_path = imported_symbol.get_parent_fs_path()
+            parent_module = imported_symbol.symbol
             parent_class = parent.attr
         else:
             # We don't support multi-level 'parent.parent.Class'
