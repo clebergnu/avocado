@@ -6,8 +6,8 @@ from selftests.utils import AVOCADO
 
 # Use the same definitions from loader to make sure the behavior
 # is also the same
-from .test_loader import AVOCADO_TEST_OK as AVOCADO_INSTRUMENTED_TEST
-from .test_loader import SIMPLE_TEST as EXEC_TEST
+from selftests.functional.test_loader import AVOCADO_TEST_OK as AVOCADO_INSTRUMENTED_TEST
+from selftests.functional.test_loader import SIMPLE_TEST as EXEC_TEST
 
 
 class ResolverFunctional(unittest.TestCase):
