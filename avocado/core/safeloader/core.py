@@ -110,7 +110,53 @@ def _get_attributes_for_further_examination(parent, module):
         parent_module = imported_symbol.get_compat_module_path()
         parent_class = imported_symbol.get_compat_symbol()
 
-    return parent_path, parent_module, parent_class
+    return parent_path, parent_module, parent_class, imported_symbol
+
+
+def _find_import_match(parent_path, parent_module, module):
+    modules_paths = [parent_path,
+                     os.path.dirname(module.path)] + sys.path
+    found_spec = PathFinder.find_spec(parent_module, modules_paths)
+    if found_spec is None:
+        raise ClassNotSuitable
+    return found_spec
+
+
+def _find_import_match_recursive(parent_path, imported_symbol, module):
+    modules_paths = [parent_path,
+                     os.path.dirname(module.path)] + sys.path
+
+    found_spec = None
+
+    if imported_symbol.is_relative():
+        mods_paths = modules_paths[:]
+        mods_paths.insert(0, imported_symbol.get_relative_module_fs_path())
+        found_spec = PathFinder.find_spec(imported_symbol.symbol, mods_paths)
+        if found_spec:
+            # Not a direct match because it includes
+            # other submodules, so skip it
+            if found_spec.submodule_search_locations:
+                found_spec = None
+
+    if not found_spec and (not imported_symbol.is_relative()):
+        components = imported_symbol.module_path.split('.')
+        parent_module = components[-1]
+        for component in reversed(components):
+            paths_to_add = [os.path.join(path, component) for path in modules_paths]
+            for path_to_add in paths_to_add:
+                mods_paths = modules_paths[:]
+                mods_paths.insert(0, path_to_add)
+                found_spec = PathFinder.find_spec(parent_module, mods_paths)
+                if found_spec:
+                    # Not a direct match because it includes
+                    # other submodules, so skip it
+                    if found_spec.submodule_search_locations:
+                        found_spec = None
+                        continue
+                    break
+    if found_spec is None:
+        raise ClassNotSuitable
+    return found_spec
 
 
 def _examine_class(target_module, target_class, determine_match, path,
@@ -175,17 +221,17 @@ def _examine_class(target_module, target_class, determine_match, path,
         for parent in parents:
             try:
                 (parent_path,
-                 parent_module,
-                 parent_class) = _get_attributes_for_further_examination(parent,
-                                                                         module)
+                 _,
+                 parent_class,
+                 imported_symbol) = _get_attributes_for_further_examination(parent,
+                                                                            module)
+
+                found_spec = _find_import_match_recursive(parent_path,
+                                                          imported_symbol,
+                                                          module)
             except ClassNotSuitable:
                 continue
 
-            modules_paths = [parent_path,
-                             os.path.dirname(module.path)] + sys.path
-            found_spec = PathFinder.find_spec(parent_module, modules_paths)
-            if found_spec is None:
-                continue
             _info, _disabled, _match = _examine_class(target_module,
                                                       target_class,
                                                       determine_match,
@@ -277,17 +323,17 @@ def find_python_tests(target_module, target_class, determine_match, path):
         for parent in parents:
             try:
                 (parent_path,
-                 parent_module,
-                 parent_class) = _get_attributes_for_further_examination(parent,
-                                                                         module)
+                 _,
+                 parent_class,
+                 imported_symbol) = _get_attributes_for_further_examination(parent,
+                                                                            module)
+
+                found_spec = _find_import_match_recursive(parent_path,
+                                                          imported_symbol,
+                                                          module)
             except ClassNotSuitable:
                 continue
 
-            modules_paths = [parent_path,
-                             os.path.dirname(module.path)] + sys.path
-            found_spec = PathFinder.find_spec(parent_module, modules_paths)
-            if found_spec is None:
-                continue
             _info, _dis, _match = _examine_class(target_module,
                                                  target_class,
                                                  determine_match,
