@@ -76,14 +76,21 @@ class ImportedSymbol:
         return self.module_path.startswith(".")
 
     def get_relative_module_fs_path(self):
-        """Returns the module filesystem path, based on its relative path
+        """Returns the module base dir, based on its relative path
+
+        The base dir for the module is the directory where one is
+        expected to find the first module of the module path.  For a
+        module path of "..foo.bar", and its importer being at
+        "/abs/path", the base dir where "foo" is supposed to be found
+        would be "/abs".  And as a consequence, "bar" would be found
+        at "/abs/foo/bar".
 
         This assumes that the module path is indeed related to the location
         of its importer.  This may not be true if the namespaces match, but
         are distributed across different filesystem paths.
         """
         path = self.importer_fs_path
-        for char in self.module_path:
+        for char in self.module_path[1:]:
             if char != ".":
                 break
             path = os.path.dirname(path)
