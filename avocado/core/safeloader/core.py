@@ -203,7 +203,9 @@ def _examine_class(target_module, target_class, determine_match, path,
     info = []
     disabled = set()
 
+    print('@_examine_class path:', path)
     for klass in module.iter_classes():
+        print('@_examine_class klass.name:', klass.name)
         if class_name != klass.name:
             continue
 
@@ -285,12 +287,16 @@ def find_python_tests(target_module, target_class, determine_match, path):
               forcefully disabled.
     :rtype: tuple
     """
+    print('@find_python_tests path:', path)
     module = PythonModule(path, target_module, target_class)
+    #import pdb; pdb.set_trace()
     # The resulting test classes
     result = collections.OrderedDict()
     disabled = set()
 
     for klass in module.iter_classes():
+        print('@find_python_tests klass.name:', klass.name)
+
         docstring = ast.get_docstring(klass)
         # Looking for a class that has in the docstring either
         # ":avocado: enable" or ":avocado: disable
@@ -325,15 +331,22 @@ def find_python_tests(target_module, target_class, determine_match, path):
         match = _examine_same_module(parents, info, disabled, match, module,
                                      target_module, target_class, determine_match)
 
+        print('@find_python_tests match:', match)
         # If there are parents left to be discovered, they
         # might be in a different module.
         for parent in parents:
+            _parent = getattr(parent, 'id', '')
+            if not _parent:
+                _parent = getattr(parent, 'value', '').id
+            print('@find_python_tests parent:', _parent)
             try:
                 (parent_path,
                  _,
                  parent_class,
                  imported_symbol) = _get_attributes_for_further_examination(parent,
                                                                             module)
+
+                #import pdb; pdb.set_trace()
 
                 found_spec = _find_import_match_recursive(parent_path,
                                                           imported_symbol,
