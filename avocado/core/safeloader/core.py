@@ -123,15 +123,22 @@ def _find_import_match(parent_path, parent_module, module):
 
 
 def _find_import_match_recursive(parent_path, imported_symbol, module):
+    parent_path = parent_path.rstrip(os.path.sep)
     modules_paths = [parent_path,
                      os.path.dirname(module.path)] + sys.path
 
     found_spec = None
-
     if imported_symbol.is_relative():
-        mods_paths = modules_paths[:]
-        mods_paths.insert(0, imported_symbol.get_relative_module_fs_path())
-        found_spec = PathFinder.find_spec(imported_symbol.symbol, mods_paths)
+        rel_path = imported_symbol.get_relative_module_fs_path()
+        mod = imported_symbol.module_path.strip('.')
+        if not mod:
+            mod = imported_symbol.symbol
+        if rel_path not in modules_paths:
+            mods_paths = modules_paths[:]
+            mods_paths.insert(0, imported_symbol.get_relative_module_fs_path())
+        else:
+            mods_paths = modules_paths
+        found_spec = PathFinder.find_spec(mod, mods_paths)
         if found_spec:
             # Not a direct match because it includes
             # other submodules, so skip it
