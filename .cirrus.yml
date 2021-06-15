@@ -1,8 +1,7 @@
-centos_podman_task:
+fedora_coreos_podman_task:
     podman_spawner_script:
-       - dnf -y install podman
        - podman --version
     compute_engine_instance:
-       image_project: cirrus-images
-       image: family/centos-8
+       image_project: fedora-coreos-cloud
+       image: family/fedora-coreos-stable
        platform: linux
