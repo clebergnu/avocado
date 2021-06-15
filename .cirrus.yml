@@ -5,3 +5,12 @@ fedora_coreos_podman_task:
        image_project: fedora-coreos-cloud
        image: family/fedora-coreos-stable
        platform: linux
+
+centos_podman_task:
+    podman_spawner_script:
+       - dnf -y install podman
+       - podman --version
+    compute_engine_instance:
+       image_project: centos-cloud
+       image: centos-8-v20210609
+       platform: linux
