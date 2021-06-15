@@ -1,7 +1,8 @@
 centos_podman_task:
     podman_spawner_script:
-       - docker --version
+       - dnf -y install podman
+       - podman --version
     compute_engine_instance:
        image_project: cirrus-images
-       image: family/docker-kvm
+       image: family/centos-8
        platform: linux
