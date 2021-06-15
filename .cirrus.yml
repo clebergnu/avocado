@@ -8,8 +8,11 @@ fedora_coreos_podman_task:
 
 centos_podman_task:
     podman_spawner_script:
-       - dnf -y install podman
-       - podman --version
+       - podman --version || dnf -y install podman
+       - podman pull fedora:34
+       - python3 -c 'import setuptools' || dnf -y install python3 python3-setuptools
+       - python3 setup.py develop --user
+       - python3 -m avocado run --test-runner=nrunner --nrunner-spawner=podman --spawner-podman-image=fedora:34 /bin/true
     compute_engine_instance:
        image_project: centos-cloud
        image: centos-8-v20210609
