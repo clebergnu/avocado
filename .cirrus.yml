@@ -1,8 +1,12 @@
-fedora_coreos_podman_task:
+podman_task:
      compute_engine_instance:
          image_project: cirrus-images
          image: family/docker-builder
          platform: linux
      podman_spawner_script:
         - docker --version
-        - apt -y update && apt -y install podman
+        - apt -y update && apt -y install podman python3 python3-setuptools 
+        - podman --version
+        - podman pull fedora:34
+        - python3 setup.py develop --user
+        - avocado run --test-runner=nrunner -- /bin/true
