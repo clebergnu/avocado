@@ -9,4 +9,4 @@ podman_task:
         - podman --version
         - podman pull fedora:34
         - python3 setup.py develop --user
-        - avocado run --test-runner=nrunner -- /bin/true
+        - python3 -m avocado run --test-runner=nrunner -- /bin/true
