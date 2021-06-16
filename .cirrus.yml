@@ -71,3 +71,11 @@ fedora_selftests_task:
         matrix:
           - image: quay.io/avocado-framework/avocado-ci-fedora-32
           - image: quay.io/avocado-framework/avocado-ci-fedora-33
+
+fedora_coreos_podman_task:
+     compute_engine_instance:
+         image_project: fedora-coreos-cloud
+         image: family/fedora-coreos-stable
+         platform: linux
+     podman_spawner_script:
+        - podman --version
