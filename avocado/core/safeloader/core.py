@@ -186,6 +186,9 @@ def _examine_class(target_module, target_class, determine_match, path,
         # If there are parents left to be discovered, they
         # might be in a different module.
         for parent in parents:
+            parent_id = getattr(parent, 'id', '')
+            if parent_id:
+                print('>>> @_examine_class parent.id:', parent_id, file=sys.stderr)
             try:
                 (parent_path,
                  parent_module,
@@ -288,6 +291,9 @@ def find_python_tests(target_module, target_class, determine_match, path):
         # If there are parents left to be discovered, they
         # might be in a different module.
         for parent in parents:
+            parent_id = getattr(parent, 'id', '')
+            if parent_id:
+                print('>>> @find_python_tests parent.id:', parent.id, file=sys.stderr)
             try:
                 (parent_path,
                  parent_module,
