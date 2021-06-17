@@ -160,6 +160,7 @@ def _examine_class(target_module, target_class, determine_match, path,
     disabled = set()
 
     for klass in module.iter_classes():
+        print('>>> @_examine_class klass:', klass.name, file=sys.stderr)
         if class_name != klass.name:
             continue
 
@@ -244,6 +245,7 @@ def find_python_tests(target_module, target_class, determine_match, path):
     disabled = set()
 
     for klass in module.iter_classes():
+        print('>>> @find_python_tests klass:', klass.name, file=sys.stderr)
         docstring = ast.get_docstring(klass)
         # Looking for a class that has in the docstring either
         # ":avocado: enable" or ":avocado: disable
