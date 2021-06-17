@@ -98,8 +98,10 @@ def _get_attributes_for_further_examination(parent, module):
                    module being inspected
     :type module: :class:`avocado.core.safeloader.module.PythonModule`
     :raises: ClassNotSuitable
-    :returns: the path, module and class name to be further examined
-    :rtype: tuple
+    :returns: a tuple with two values: the class name and the imported
+              symbol instance matching the further examination step
+    :rtype: tuple of (str,
+            :class:`avocado.core.safeloader.imported.ImportedSymbol`)
     """
     if hasattr(parent, 'value'):
         # A "value" in an "attribute" in this context means that
@@ -124,8 +126,6 @@ def _get_attributes_for_further_examination(parent, module):
             if imported_symbol is None:
                 # We can't examine this parent (probably broken module)
                 raise ClassNotSuitable
-            parent_path = imported_symbol.get_parent_fs_path()
-            parent_module = imported_symbol.symbol
             parent_class = parent.attr
     else:
         # We only know 'Class' or 'AsClass' and need to get
@@ -135,20 +135,9 @@ def _get_attributes_for_further_examination(parent, module):
         if imported_symbol is None:
             # We can't examine this parent (probably broken module)
             raise ClassNotSuitable
-        parent_path = imported_symbol.get_compat_parent_path()
-        parent_module = imported_symbol.get_compat_module_path()
         parent_class = imported_symbol.get_compat_symbol()
 
-    return parent_path, parent_module, parent_class
-
-
-def _find_import_match(parent_path, parent_module):
-    """Attempts to find an importable module."""
-    modules_paths = [parent_path] + sys.path
-    found_spec = PathFinder.find_spec(parent_module, modules_paths)
-    if found_spec is None:
-        raise ClassNotSuitable
-    return found_spec
+    return parent_class, imported_symbol
 
 
 def _examine_class(target_module, target_class, determine_match, path,
@@ -212,11 +201,14 @@ def _examine_class(target_module, target_class, determine_match, path,
         # might be in a different module.
         for parent in parents:
             try:
-                (parent_path,
-                 parent_module,
-                 parent_class) = _get_attributes_for_further_examination(parent,
-                                                                         module)
-                found_spec = _find_import_match(parent_path, parent_module)
+                (parent_class,
+                 imported_symbol) = _get_attributes_for_further_examination(parent,
+                                                                            module)
+
+                found_spec = imported_symbol.get_importable_spec()
+                if found_spec is None:
+                    continue
+
             except ClassNotSuitable:
                 continue
 
@@ -310,11 +302,13 @@ def find_python_tests(target_module, target_class, determine_match, path):
         # might be in a different module.
         for parent in parents:
             try:
-                (parent_path,
-                 parent_module,
-                 parent_class) = _get_attributes_for_further_examination(parent,
-                                                                         module)
-                found_spec = _find_import_match(parent_path, parent_module)
+                (parent_class,
+                 imported_symbol) = _get_attributes_for_further_examination(parent,
+                                                                            module)
+                found_spec = imported_symbol.get_importable_spec()
+                if found_spec is None:
+                    continue
+
             except ClassNotSuitable:
                 continue
 
