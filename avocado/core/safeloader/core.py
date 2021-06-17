@@ -154,6 +154,7 @@ def _examine_class(target_module, target_class, determine_match, path,
               look like avocado tests but are force-disabled.
     :rtype: tuple
     """
+    print('>>> @_examine_class path:', path, file=sys.stderr)
     module = PythonModule(path, target_module, target_class)
     info = []
     disabled = set()
@@ -236,6 +237,7 @@ def find_python_tests(target_module, target_class, determine_match, path):
               forcefully disabled.
     :rtype: tuple
     """
+    print('>>> @find_python_tests path:', path, file=sys.stderr)
     module = PythonModule(path, target_module, target_class)
     # The resulting test classes
     result = collections.OrderedDict()
