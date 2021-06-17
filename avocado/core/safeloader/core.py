@@ -195,6 +195,12 @@ def _examine_class(target_module, target_class, determine_match, path,
                  parent_class) = _get_attributes_for_further_examination(parent,
                                                                          module)
                 found_spec = _find_import_match(parent_path, parent_module)
+
+                print('>>> @_examine_class parent_path:', parent_path, file=sys.stderr)
+                print('>>> @_examine_class parent_module:', parent_module, file=sys.stderr)
+                print('>>> @_examine_class parent_class:', parent_class, file=sys.stderr)
+                print('>>> @_examine_class found_spec:', found_spec, file=sys.stderr)
+
             except ClassNotSuitable:
                 continue
 
@@ -300,6 +306,12 @@ def find_python_tests(target_module, target_class, determine_match, path):
                  parent_class) = _get_attributes_for_further_examination(parent,
                                                                          module)
                 found_spec = _find_import_match(parent_path, parent_module)
+
+                print('>>> @find_python_tests parent_path:', parent_path, file=sys.stderr)
+                print('>>> @find_python_tests parent_module:', parent_module, file=sys.stderr)
+                print('>>> @find_python_tests parent_class:', parent_class, file=sys.stderr)
+                print('>>> @find_python_tests found_spec:', found_spec, file=sys.stderr)
+
             except ClassNotSuitable:
                 continue
 
