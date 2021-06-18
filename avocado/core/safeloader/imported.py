@@ -1,5 +1,7 @@
 import ast
 import os
+import sys
+from importlib.machinery import PathFinder
 
 from .utils import get_statement_import_as
 
@@ -45,6 +47,51 @@ class ImportedSymbol:
         #: The relative filesystem path of the module (which should
         #: contain the symbol) will be "/path/to".
         self.importer_fs_path = importer_fs_path
+
+    def _walk_importable_components(self):
+        if self.module_path:
+            full_name = "%s.%s" % (self.module_path, self.symbol)
+        else:
+            full_name = self.symbol
+        # Stripping leading dots, as relative paths will be handled with
+        # insertion to module_paths with the relative path
+        components = full_name.strip(".").split(".")
+        if self.module_path and len(components) > 1:
+            components = components[0:-1]
+        for index, component in enumerate(components):
+            if index > 0:
+                previous = components[index - 1]
+            else:
+                previous = ''
+            yield (component, previous)
+
+    def get_importable_spec(self):
+        """Returns the specification of an actual importable module.
+
+        This is a check based on the limitations that we do not
+        actually perform an import, and assumes a directory structure
+        with modules.
+        """
+        modules_paths = sys.path
+        modules_paths.insert(0, self.get_relative_module_fs_path())
+        spec = None
+        for component, previous in self._walk_importable_components():
+            if previous:
+                modules_paths = [os.path.join(mod, previous) for
+                                 mod in modules_paths[:]]
+            spec = PathFinder.find_spec(component, modules_paths)
+            if spec is None:
+                break
+        return spec
+
+    def is_importable(self):
+        """Checks whether this imported symbol seems to be importable.
+
+        This is a check based on the limitations that we do not
+        actually perform an import, and assumes a directory structure
+        with modules.
+        """
+        return self.get_importable_spec() is not None
 
     @staticmethod
     def _split_last_module_path_component(module_path):
