@@ -54,8 +54,9 @@ Currently we support, out of box, the following output formats:
   outputs job information, similarly to the xunit output plugin.
 
 * **TAP**: Provides the basic TAP (`Test Anything Protocol`_) results,
-  currently in v12. Unlike most existing Avocado machine readable outputs
-  this one is streamlined (per test results).
+  currently in v12. Unlike most other existing Avocado machine
+  readable outputs, this one is streamed as the job progresses and
+  tests complete.
 
 .. note:: You can see the results of the latest job inside the folder
   ``$HOME/avocado/job-results/latest/``. You can also specify at the command line
