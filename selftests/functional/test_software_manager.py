@@ -13,7 +13,6 @@ class SoftwareManager(TestCaseTmpDir):
         self.rpm_path = os.path.join(assets_dir, "hello.rpm")
         self.deb_path = os.path.join(assets_dir, "hello.deb")
 
-    @skipUnlessPathExists('/usr/bin/ar')
     @skipUnlessPathExists('/usr/bin/rpm2cpio')
     def test_extract_from_rpm(self):
         manager = software_manager.SoftwareManager()
@@ -22,15 +21,12 @@ class SoftwareManager(TestCaseTmpDir):
         self.assertEqual(self.tmpdir.name, result)
 
     @skipUnlessPathExists('/usr/bin/ar')
-    @skipUnlessPathExists('/usr/bin/rpm2cpio')
     def test_extract_from_deb(self):
         manager = software_manager.SoftwareManager()
         result = manager.extract_from_package(self.deb_path,
                                               self.tmpdir.name)
         self.assertEqual(self.tmpdir.name, result)
 
-    @skipUnlessPathExists('/usr/bin/ar')
-    @skipUnlessPathExists('/usr/bin/rpm2cpio')
     def test_extract_permission(self):
         manager = software_manager.SoftwareManager()
         with self.assertRaises(NotImplementedError) as context:
