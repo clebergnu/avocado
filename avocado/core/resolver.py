@@ -16,6 +16,7 @@
 Test resolver module.
 """
 
+import multiprocessing.pool
 import os
 from enum import Enum
 
@@ -215,11 +216,17 @@ def resolve(references, hint=None, ignore_missing=True, config=None):
             # here it walks directories if one is given, and extends
             # the original reference into final file paths
             extended_references.extend(_extend_directory(reference))
-        for reference in extended_references:
+
+        def _resolve_one(reference):
             if reference in hint_references:
-                resolutions.append(hint_references[reference])
+                return [hint_references[reference]]
             else:
-                resolutions.extend(resolver.resolve(reference))
+                return resolver.resolve(reference)
+
+        with multiprocessing.pool.ThreadPool() as pool:
+            results = pool.map(_resolve_one, extended_references)
+        for result in results:
+            resolutions.extend(result)
     else:
         discoverer = Discoverer(config)
         resolutions.extend(discoverer.discover())
