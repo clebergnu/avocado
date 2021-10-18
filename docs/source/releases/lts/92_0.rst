@@ -1,0 +1,207 @@
+.. _lts_92_0:
+
+========
+92.0 LTS
+========
+
+The Avocado team is proud to present another LTS (Long Term Stability)
+release: Avocado 92.0, AKA "Monsters, Inc.", is now available!
+
+LTS Release
+===========
+
+For more information on what a LTS release means, please read
+:ref:`rfc-long-term-stability`.
+
+Upgrading from 82.x to 92.0
+===========================
+
+Upgrading Installations
+-----------------------
+
+Avocado is available on a number of different repositories and
+installation methods. You can find the complete details
+:ref:`here <installing>`.
+
+After looking at your installation options, please consider the
+following when planning an in-place upgrade or a deployment version
+bump:
+
+* When using Python's own package management, that is, ``pip``, simply
+  choose a version lower to the *next* Avocado release to benefit from
+  minor releases (bugfixes) in this LTS series.  In short,
+  ``avocado-framework<93.0`` will get you the latest release of this
+  LTS series.
+
+* When using RPM packages on Linux distributions that provide modular
+  packages, select the ``92lts`` stream.  If no modules are available,
+  use your package manager tools (such as DNF's versionlock plugin) to
+  pin the installation to the 92.x versions.
+
+Porting Tests (Test API compatibility)
+--------------------------------------
+
+There is only one known incompatible changes on the Test API:
+
+* The :class:`avocado.Test` used to contain a reference to its
+  :class:`avocado.core.job.Job` in its ``job`` attribute.  Even
+  though it was intended for internal use, the fact that the
+  attribute was available to tests, means that tests could
+  be relying on it.  If your test uses the ``job`` attribute,
+  please consider looking at the suite's configuration instead,
+  and passing that information as a test parameter.
+
+Porting Tests (Utility API compatibility)
+-----------------------------------------
+
+The changes in the utility APIs (those that live under the
+``avocado.utils`` namespace are too many to present porting
+suggestion.  Please refer to the :ref:`lts_92_0_utility_apis` section
+for a comprehensive list of changes, including new features your test
+may be able to leverage.
+
+Changes from previous LTS
+=========================
+
+.. note:: This is not a collection of all changes encompassing all releases
+          from 82.0 to 92.0.  This list contains changes that are relevant
+          to users of 82.0, when evaluating an upgrade to 92.0.
+
+When compared to the last LTS (version 82.0), the main changes
+introduced by this versions are:
+
+Users / Test Writers
+--------------------
+
+* The ``nrunner`` test runner implementation is now the default on
+  every ``avocado run`` command (or equivalent Job API scripts).
+  Since the previous release, ``nrunner`` supports:
+
+ 1. the "fail fast" (``run --failfast``) feature.
+
+ 2. :ref:`the varianter <varianter>` feature.
+
+ 3. UNIX domain sockets as the communication channel with runners (the
+    new default).
+
+ 4. a ``sysinfo`` runner, which will allow for sysinfo collection on
+    any supported spawner.
+
+ 5. early notification of missing runners for tasks in the requested
+    suite.
+
+* Yaml To Mux plugin now properly supports ``None`` values.
+
+* Command line options related to results, such as
+  ``--json-job-result``, ``--tap-job-result``, ``--xunit-job-result``
+  and ``--html-job-result`` are now "proper boolean" options (such as
+  ``--disable-json-job-result``, ``--disable-xunit-job-result``, etc).
+
+* The JSON results (``results.json``) now contain a field with the
+  path of the test log file.
+
+* Pre and Post (job) plugins are now respected when used with the Job
+  API.
+
+* Support for ``avocado list`` "extra information" has been
+  restored. This is used in Avocado-VT loaders. They will be removed
+  (again) for good after its usage is deprecated and removed in
+  Avocado-VT.
+
+* It’s now possible to set a timeout (via the ``task.timeout.running
+  configuration`` option) for nrunner tasks. Effectively this works as
+  an execution timeout for tests run with ``--test-runner=nrunner``.
+
+* The ``avocado assets`` command introduces three different subcommands:
+
+  1. ``register`` allows users to register their own assets with the
+     avocado assets register command. Then, the registered asset can
+     be used transparently with the
+     avocado.core.test.Test.fetch_asset() by its name. This feature
+     helps with tests that need to use assets that can not be
+     downloaded by Avocado itself.
+
+  2. ``list`` allows listing of assets based on their sizes or the
+     number of days since they have been last accessed.
+
+  3. ``purge`` allows purging of assets based on their sizes or the
+     number of days since they have been last accessed.  For more
+     information please refer to :ref:`managing-assets`.
+
+* The assets plugin ``fetch`` command (``avocado assets fetch``) now
+  supports:
+
+  1. fetching assets defined in a Python list in ``INSTRUMENTED``
+     tests.
+
+  2. setting a timeout for the download of assets.
+
+* :func:`avocado.skipIf` and :func:`avocado.skipUnless` now allow the
+  condition to be a callable, to be evaluate much later, and also
+  gives them access to the test class.  For more information, please
+  refer to the documentation: :ref:`skip-advanced-conditionals`.
+
+* The presentation of SIMPLE tests has been improved in the sense that
+  they are now much more configurable. One can now set the
+  ``simpletests.status.failure_fields`` to configure how the status
+  line showed just after a failed test will look like, and
+  ``job.output.testlogs.logfiles`` to determine the files that will be
+  shown at the end of the job for failed tests.
+
+* Avocado's safeloader (the system used to find Python based tests
+  without executing them) received a major overhaul and now supports:
+
+ 1. Multi-level module imports, such as ``from my.base.test import
+    Test`` where a project may contain a ``my/base`` directory
+    structure containing ``test.py`` that defines a custom ``Test``
+    class.
+
+ 2. Support for following the import/inheritance hierarchy when a
+    module contains an import for a given symbol, instead of the
+    actual ``class`` definition of a symbol.
+
+ 3. Considers coroutines (AKA ``async def``) as valid tests, reducing
+    the number of boiler plate code necessary for tests of ``asyncio``
+    based code.
+
+ 4. Supports class definitions (containing tests or not) that use a
+    typing hint with subscription, commonly used in generics.
+
+* Test parameters given with -p are now supported when using the
+  nrunner.
+
+* Improved checks when users attempt to use the varianter and simple
+  parameters (``-p``) at the same time.
+
+* All status server URIs in the configuration are now respected for
+  ``nrunner`` executions.
+
+* The resolver plugins now have access to the job/suite configuration.
+
+* The data directories now have fewer heuristics and are now more
+  predictable and consistent with the configuration set.
+
+* The root logger for Python's :mod:`logging` should no longer be
+  impacted by Avocado's own logging initialization and clean-up (which
+  now limits itself to ``avocado.*`` loggers).
+
+Test Writers
+------------
+
+.. _lts_92_0_utility_apis:
+
+Utility APIs
+------------
+
+
+Contributors
+------------
+
+
+
+Complete list of changes
+------------------------
+
+For a complete list of changes between the last LTS release (82.1) and
+this release, please check out `the Avocado commit changelog
+<https://github.com/avocado-framework/avocado/compare/82.1...92.0>`_.
