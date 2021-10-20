@@ -118,6 +118,10 @@ jobs:
         run: python -m avocado --help
       - name: Example test
         run: python -m avocado run examples/tests/passtest.py
+      - name: Example test logs
+        run: cat ~/avocado/job-results/latest/avocado.core.DEBUG ~/avocado/job-results/latest/test-results/*/debug.log
+      - name: avocado-runner-avocado-instrumented test
+        run: python -m avocado.core.runners.avocado_instrumented runnable-run -k avocado-instrumented -u examples/tests/passtest.py:PassTest.test
       - name: List test
         run: python -m avocado --verbose list selftests/unit/* selftests/functional/* selftests/*sh
       # This test is known NOT to work
