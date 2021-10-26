@@ -277,7 +277,7 @@ class Runner(RunnerInterface):
                 job_id))
         return runtime_tasks
 
-    def _determine_status_server_uri(self, test_suite, job):
+    def _determine_status_server_uri(self, test_suite):
         # pylint: disable=W0201
         self.status_server_dir = None
         if test_suite.config.get('nrunner.status_server_auto'):
@@ -290,7 +290,7 @@ class Runner(RunnerInterface):
         return test_suite.config.get('nrunner.status_server_listen')
 
     def _create_status_server(self, test_suite, job):
-        listen = self._determine_status_server_uri(test_suite, job)
+        listen = self._determine_status_server_uri(test_suite)
         # pylint: disable=W0201
         self.status_repo = StatusRepo(job.unique_id)
         # pylint: disable=W0201
