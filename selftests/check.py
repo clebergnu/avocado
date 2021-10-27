@@ -51,6 +51,9 @@ class JobAPIFeaturesTest(Test):
                   'resolver.references': reference}
         namespace = self.params.get('namespace')
         config[namespace] = value
+        extra_job_config = self.params.get('extra_job_config')
+        if extra_job_config is not None:
+            config.update(extra_job_config)
 
         return config
 
@@ -326,7 +329,8 @@ def create_suite_job_api(args):  # pylint: disable=W0621
              'content': '--[ CUT DUE TO XML PER TEST LIMIT ]--',
              'assert': True,
              'reference': ['/bin/false'],
-             'exit_code': 1},
+             'exit_code': 1,
+             'extra_job_config': {'run.test_runner': 'runner'}},
 
             {'namespace': 'run.failfast',
              'value': True,
@@ -334,7 +338,8 @@ def create_suite_job_api(args):  # pylint: disable=W0621
              'content': '"skip": 1',
              'assert': True,
              'reference': ['/bin/false', '/bin/true'],
-             'exit_code': 9},
+             'exit_code': 9,
+             'extra_job_config': {'run.test_runner': 'runner'}},
 
             {'namespace': 'run.ignore_missing_references',
              'value': 'on',
@@ -355,7 +360,8 @@ def create_suite_job_api(args):  # pylint: disable=W0621
              'file': 'job.log',
              'content': 'RuntimeError: Test interrupted by SIGTERM',
              'assert': True,
-             'exit_code': 8},
+             'exit_code': 8,
+             'extra_job_config': {'run.test_runner': 'runner'}},
         ]
     }
 
