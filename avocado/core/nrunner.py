@@ -302,6 +302,12 @@ class Runnable:
         if runner_cmd is not None:
             return runner_cmd
 
+        # look for the runner commands implemented in the base nrunner module
+        candidate_cmd = [sys.executable, '-m', 'avocado.core.nrunner']
+        if self.is_kind_supported_by_runner_command(candidate_cmd):
+            runners_registry[self.kind] = candidate_cmd
+            return candidate_cmd
+
         standalone_executable_cmd = ['avocado-runner-%s' % self.kind]
         if self.is_kind_supported_by_runner_command(standalone_executable_cmd):
             runners_registry[self.kind] = standalone_executable_cmd
