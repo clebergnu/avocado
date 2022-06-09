@@ -28,7 +28,7 @@
 Summary: Framework with tools and libraries for Automated Testing
 Name: python-avocado
 Version: 98.0
-Release: 2%{?gitrel}%{?dist}
+Release: 3%{?gitrel}%{?dist}
 License: GPLv2+ and GPLv2 and MIT
 URL: https://avocado-framework.github.io/
 %if 0%{?rel_build}
@@ -116,6 +116,9 @@ popd
 pushd optional_plugins/golang
 %py3_build
 popd
+pushd optional_plugins/ansible
+%py3_build
+popd
 pushd optional_plugins/varianter_pict
 %py3_build
 popd
@@ -144,6 +147,9 @@ pushd optional_plugins/varianter_yaml_to_mux
 %py3_install
 popd
 pushd optional_plugins/golang
+%py3_install
+popd
+pushd optional_plugins/ansible
 %py3_install
 popd
 pushd optional_plugins/varianter_pict
@@ -207,6 +213,7 @@ PATH=%{buildroot}%{_bindir}:%{buildroot}%{_libexecdir}/avocado:$PATH \
 %exclude %{python3_sitelib}/avocado_result_html*
 %exclude %{python3_sitelib}/avocado_resultsdb*
 %exclude %{python3_sitelib}/avocado_golang*
+%exclude %{python3_sitelib}/avocado_ansible*
 %exclude %{python3_sitelib}/avocado_varianter_yaml_to_mux*
 %exclude %{python3_sitelib}/avocado_varianter_pict*
 %exclude %{python3_sitelib}/avocado_varianter_cit*
@@ -217,6 +224,7 @@ PATH=%{buildroot}%{_bindir}:%{buildroot}%{_libexecdir}/avocado:$PATH \
 %exclude %{python3_sitelib}/avocado_framework_plugin_varianter_pict*
 %exclude %{python3_sitelib}/avocado_framework_plugin_varianter_cit*
 %exclude %{python3_sitelib}/avocado_framework_plugin_golang*
+%exclude %{python3_sitelib}/avocado_framework_plugin_ansible*
 %exclude %{python3_sitelib}/avocado_framework_plugin_result_upload*
 %exclude %{python3_sitelib}/tests*
 
@@ -305,6 +313,21 @@ also run them.
 %{python3_sitelib}/avocado_framework_plugin_golang*
 %{_bindir}/avocado-runner-golang
 
+%package -n python3-avocado-plugins-ansible
+Summary: Avocado Ansible Dependency plugin
+License: GPLv2+
+Requires: python3-avocado == %{version}-%{release}
+Requires: ansible
+
+%description -n python3-avocado-plugins-ansible
+Adds to Avocado the ability to use ansible modules as dependecies for
+tests.
+
+%files -n python3-avocado-plugins-ansible
+%{python3_sitelib}/avocado_ansible*
+%{python3_sitelib}/avocado_framework_plugin_ansible*
+%{_bindir}/avocado-runner-ansible-module
+
 %package -n python3-avocado-plugins-varianter-pict
 Summary: Varianter with combinatorial capabilities by PICT
 License: GPLv2+
@@ -379,6 +402,9 @@ Again Shell code (and possibly other similar shells).
 %{_libexecdir}/avocado*
 
 %changelog
+* Mon Jul 25 2022 Cleber Rosa <crosa@redhat.com> - 98.0-3
+- Added new sub package python3-avocado-plugins-ansible
+
 * Thu Jul 21 2022 Cleber Rosa <crosa@redhat.com> - 98.0-2
 - Added new avocado-runner-podman-image script
 
