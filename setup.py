@@ -320,6 +320,7 @@ if __name__ == '__main__':
                   'avocado-runner-tap = avocado.plugins.runners.tap:main',
                   'avocado-runner-asset = avocado.plugins.runners.asset:main',
                   'avocado-runner-package = avocado.plugins.runners.package:main',
+                  'avocado-runner-ansible-module = avocado.plugins.runners.ansible_module:main',
                   'avocado-runner-sysinfo = avocado.plugins.runners.sysinfo:main',
                   'avocado-software-manager = avocado.utils.software_manager.main:main',
                   'avocado-external-runner = scripts.external_runner:main',
@@ -407,6 +408,7 @@ if __name__ == '__main__':
                   'python-unittest = avocado.plugins.runners.python_unittest:PythonUnittestRunner',
                   'asset = avocado.plugins.runners.asset:AssetRunner',
                   'package = avocado.plugins.runners.package:PackageRunner',
+                  'ansible-module = avocado.plugins.runners.ansible_module:AnsibleModuleRunner',
                   'sysinfo = avocado.plugins.runners.sysinfo:SysinfoRunner',
                   ],
               'avocado.plugins.spawner': [
