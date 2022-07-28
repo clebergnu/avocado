@@ -152,42 +152,42 @@ class RunnerCLI(CLI):
         settings.add_argparser_to_option(
             namespace="nrunner.shuffle",
             parser=parser,
-            long_arg="--nrunner-shuffle",
+            long_arg="--shuffle",
             action="store_true",
         )
 
         settings.add_argparser_to_option(
             namespace="nrunner.status_server_auto",
             parser=parser,
-            long_arg="--nrunner-status-server-disable-auto",
+            long_arg="--status-server-disable-auto",
             action="store_false",
         )
 
         settings.add_argparser_to_option(
             namespace="nrunner.status_server_listen",
             parser=parser,
-            long_arg="--nrunner-status-server-listen",
+            long_arg="--status-server-listen",
             metavar="HOST_PORT",
         )
 
         settings.add_argparser_to_option(
             namespace="nrunner.status_server_uri",
             parser=parser,
-            long_arg="--nrunner-status-server-uri",
+            long_arg="--status-server-uri",
             metavar="HOST_PORT",
         )
 
         settings.add_argparser_to_option(
             namespace="nrunner.max_parallel_tasks",
             parser=parser,
-            long_arg="--nrunner-max-parallel-tasks",
+            long_arg="--max-parallel-tasks",
             metavar="NUMBER_OF_TASKS",
         )
 
         settings.add_argparser_to_option(
             namespace="nrunner.spawner",
             parser=parser,
-            long_arg="--nrunner-spawner",
+            long_arg="--spawner",
             metavar="SPAWNER",
         )
 
