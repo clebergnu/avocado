@@ -8,31 +8,6 @@ on:
 
 jobs:
 
-  make-check:
-    name: Run 'make check'
-    runs-on: ubuntu-20.04
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-      - name: Set up Python 3.9
-        uses: actions/setup-python@v2
-        with:
-          python-version: 3.9
-      - name: Install dependencies
-        run: pip install -r requirements-dev.txt
-      - name: Installing Avocado in develop mode
-        run: python3 setup.py develop --user
-      - name: Run make check
-        run: make check
-      - name: Save artifacts
-        if: failure()
-        uses: actions/upload-artifact@v2
-        with:
-          name: job-results-make-check
-          path: /home/runner/avocado/job-results/
-          retention-days: 1
-
   avocado-pre-release:
     name: Avocado pre-release job
     runs-on: ubuntu-latest
@@ -52,41 +27,4 @@ jobs:
         with:
           name: job-results-pre-release
           path: /home/runner/avocado/job-results/
-          retention-days: 1
-
-  check-rpm-available-copr:
-    name: Check the right RPM packages are available in COPR
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          ref: 'master'
-      - name: Check the right RPM packages are available
-        run: ./selftests/pre_release/tests/check-copr-rpm-version.sh
-
-  avocado-deployment-copr:
-    name: Avocado deployment
-    runs-on: ubuntu-latest
-    container:
-      image: fedora:36
-    env:
-      GIT_URL: 'https://github.com/avocado-framework/avocado'
-      INVENTORY: 'selftests/deployment/inventory'
-      PLAYBOOK: 'selftests/deployment/deployment.yml'
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-      - name: Install Ansible
-        run: dnf install -y git ansible
-      - name: Run Ansible playbook
-        run:  ansible-pull -v -U ${{env.GIT_URL}} -i ${{env.INVENTORY}} -c local ${{env.PLAYBOOK}} -e "method=copr"
-      - name: Run test
-        run: avocado run /usr/bin/true
-      - name: Save artifacts
-        if: failure()
-        uses: actions/upload-artifact@v2
-        with:
-          name: job-results-deployment
-          path: /github/home/avocado/job-results/
           retention-days: 1
