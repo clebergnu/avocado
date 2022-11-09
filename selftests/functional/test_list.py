@@ -265,7 +265,7 @@ class ListTestFunctional(TestCaseTmpDir):
             f"{AVOCADO} run --disable-sysinfo --job-results-dir "
             f"'{self.tmpdir.name}' -- '{mytest}'"
         )
-        self._run_with_timeout(cmd_line, 5)
+        self._run_with_timeout(cmd_line, 10)
 
     @skipOnLevelsInferiorThan(2)
     def test_simple_using_main(self):
