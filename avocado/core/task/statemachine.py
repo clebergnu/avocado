@@ -17,10 +17,10 @@ class TaskStateMachine:
     def __init__(self, tasks, status_repo):
         self._requested = collections.deque(tasks)
         self._status_repo = status_repo
-        self._triaging = []
-        self._ready = []
-        self._started = []
-        self._finished = []
+        self._triaging = collections.deque()
+        self._ready = collections.deque()
+        self._started = collections.deque()
+        self._finished = collections.deque()
         self._lock = asyncio.Lock()
         self._cache_lock = asyncio.Lock()
 
@@ -80,10 +80,7 @@ class TaskStateMachine:
         async with self._lock:
             queue = getattr(self, queue_name)
             for _ in range(len(queue)):
-                if queue_name == "requested":
-                    runtime_task = queue.popleft()
-                else:
-                    runtime_task = queue.pop(0)
+                runtime_task = queue.popleft()
                 to_remove.append(runtime_task)
 
         if to_remove:
@@ -175,7 +172,7 @@ class Worker:
 
         try:
             async with self._state_machine.lock:
-                runtime_task = self._state_machine.triaging.pop(0)
+                runtime_task = self._state_machine.triaging.popleft()
         except IndexError:
             return
 
@@ -246,7 +243,7 @@ class Worker:
         """Reads from ready, moves into either: started or finished."""
         try:
             async with self._state_machine.lock:
-                runtime_task = self._state_machine.ready.pop(0)
+                runtime_task = self._state_machine.ready.popleft()
         except IndexError:
             return
 
@@ -286,7 +283,7 @@ class Worker:
         """Reads from started, moves into finished."""
         try:
             async with self._state_machine.lock:
-                runtime_task = self._state_machine.started.pop(0)
+                runtime_task = self._state_machine.started.popleft()
         except IndexError:
             return
 
