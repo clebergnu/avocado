@@ -1,3 +1,5 @@
+import collections
+import io
 import os
 import shutil
 import subprocess
@@ -7,6 +9,35 @@ import pkg_resources
 
 from avocado.core.nrunner.app import BaseRunnerApp
 from avocado.core.nrunner.runner import BaseRunner
+from avocado.utils.datadrainer import FDDrainer
+
+
+class StatusMessageDrainer(FDDrainer):
+    """
+    Drains the test process file descrptions and sends status messages
+    """
+
+    name = "avocado.plugins.runners.exec_test.StatusMessageDrainer"
+
+    def __init__(self, source, stop_check=None, name=None, messages=None):
+        super().__init__(source, stop_check, name)
+        self._buffer = io.BytesIO()
+        self._messages = messages
+
+    def write(self, data):
+        if b"\n" not in data:
+            self._buffer.write(data)
+            return
+        data = self._buffer.getvalue() + data
+        lines = data.split(b"\n")
+        if not lines[-1].endswith(b"\n"):
+            self._buffer.close()
+            self._buffer = io.BytesIO()
+            self._buffer.write(lines[-1])
+        for line in lines:
+            line = line.decode(errors="replace").rstrip("\n")
+            if line:
+                self._messages.append(line)
 
 
 class ExecTestRunner(BaseRunner):
@@ -140,13 +171,22 @@ class ExecTestRunner(BaseRunner):
         return env
 
     def _run_proc(self, runnable):
-        return subprocess.Popen(
+        proc = subprocess.Popen(
             [runnable.uri] + list(runnable.args),
             stdin=subprocess.DEVNULL,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             env=self._get_env(runnable),
         )
+        self._stdout_messages = collections.deque()
+        self._stdout_drainer = StatusMessageDrainer(proc.stdout.fileno(),
+                                                    messages=self._stdout_messages)
+        self._stdout_drainer.start()
+        self._stderr_messages = collections.deque()
+        self._stderr_drainer = StatusMessageDrainer(proc.stderr.fileno(),
+                                                    messages=self._stderr_messages)
+        self._stderr_drainer.start()
+        return proc
 
     def run(self, runnable):
         yield self.prepare_status("started")
@@ -163,7 +203,21 @@ class ExecTestRunner(BaseRunner):
         def poll_proc():
             return process.poll() is not None
 
-        yield from self.running_loop(poll_proc)
+        def extra_messages():
+            while True:
+                try:
+                    message = self._stdout_messages.popleft()
+                    yield self.prepare_status("running", {"type": "stdout", "text": message})
+                except IndexError:
+                    break
+            while True:
+                try:
+                    message = self._stderr_messages.popleft()
+                    yield self.prepare_status("running", {"type": "stderr", "text": message})
+                except IndexError:
+                    break
+
+        yield from self.running_loop(poll_proc, extra_messages)
 
         stdout = process.stdout.read()
         stderr = process.stderr.read()

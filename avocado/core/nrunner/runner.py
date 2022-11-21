@@ -66,7 +66,7 @@ class BaseRunner(RunnableRunner):
         status.update({"status": status_type, "time": time.monotonic()})
         return status
 
-    def running_loop(self, condition):
+    def running_loop(self, condition, running_status=None):
         """Produces timely running messages until end condition is found.
 
         :param condition: a callable that will be evaluated as a
@@ -83,6 +83,10 @@ class BaseRunner(RunnableRunner):
                 most_current_execution_state_time is None
                 or now > next_execution_state_mark
             ):
-                most_current_execution_state_time = now
-                yield self.prepare_status("running")
+                if running_status is None:
+                    most_current_execution_state_time = now
+                    yield self.prepare_status("running")
+                else:
+                    yield from running_status()
+
             time.sleep(RUNNER_RUN_CHECK_INTERVAL)
