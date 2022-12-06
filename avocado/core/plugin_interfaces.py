@@ -301,7 +301,7 @@ class Runner(Plugin):
 class Spawner(Plugin):
     """Base plugin interface spawners of tasks.
 
-    A spawner implementation will spawn Avocado in its intended location, and
+    A spawner implementation will spawn tasks in its intended location, and
     isolation model. Spawners that run on the same machine as Avocado is
     originally installed are possible children of this.
     """
