@@ -92,6 +92,25 @@ class Podman:
             LOG.error(error)
             raise PodmanException(error) from ex
 
+    async def copy_from_container(self, container_id, src, dst):
+        """Copy artifacts from container:src to dst.
+
+        This method allows copying the contents of src to the dst. Files will
+        be copied from the container to the local machine. The "src" argument
+        can be a file or a directory.
+
+        :param str container_id: string with the container identification.
+        :param str src: what file or directory you are trying to copy.
+        :param str dst: the destination in the local machine.
+        :rtype: tuple with returncode, stdout and stderr.
+        """
+        try:
+            return await self.execute("cp", f"{container_id}:{src}", dst)
+        except PodmanException as ex:
+            error = f"Failed copying data from container {container_id}"
+            LOG.error(error)
+            raise PodmanException(error) from ex
+
     async def get_python_version(self, image):
         """Return the current Python version installed in an image.
 

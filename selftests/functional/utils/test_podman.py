@@ -1,3 +1,5 @@
+import os
+
 from avocado import Test
 from avocado.utils.podman import Podman
 
@@ -29,3 +31,20 @@ class PodmanTest(Test):
 
         result = await podman.get_container_info(container_id)
         self.assertEqual(result, {})
+
+    async def test_copy_from(self):
+        """
+        :avocado: dependency={"type": "package", "name": "podman", "action": "check"}
+        :avocado: dependency={"type": "podman-image", "uri": "fedora:36"}
+        :avocado: tags=slow
+        """
+        podman = Podman()
+        _, stdout, _ = await podman.execute("create", "fedora:36", "/bin/bash")
+        container_id = stdout.decode().strip()
+        await podman.copy_from_container(
+            container_id, "/etc/fedora-release", self.workdir
+        )
+        with open(os.path.join(self.workdir, "fedora-release"), "rb") as release:
+            release_content = release.read()
+        self.assertEqual(release_content, b"Fedora release 36 (Thirty Six)\n")
+        await podman.execute("rm", container_id)
