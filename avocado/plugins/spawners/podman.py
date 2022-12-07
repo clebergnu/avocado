@@ -398,3 +398,8 @@ class PodmanSpawner(DeploymentSpawner, SpawnerMixin):
                 if set(requirements) == set(finished_requirements):
                     return image, requirements
         return None, None
+
+    async def copy_from(self, runtime_task, source, destination):
+        await self.podman.copy_from_container(
+            runtime_task.spawner_handle, source, destination
+        )

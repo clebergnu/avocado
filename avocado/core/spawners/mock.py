@@ -59,6 +59,9 @@ class MockSpawner(Spawner):
     async def update_requirement_cache(runtime_task, result):
         pass
 
+    async def copy_from(self, runtime_task, source, destination):
+        pass
+
 
 class MockRandomAliveSpawner(MockSpawner):
     """A mocking spawner that simulates randomness about tasks being alive."""

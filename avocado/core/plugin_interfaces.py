@@ -404,6 +404,22 @@ class Spawner(Plugin):
         :type result: `avocado.core.teststatus.STATUSES`
         """
 
+    @abc.abstractmethod
+    async def copy_from(self, runtime_task, source, destination):
+        """Copies a file from a location within the runtime task environment.
+
+        This method is a way of copying a file from the environment of
+        a task (either one running or one that has run), to the
+        environment hosting and running an Avocado job.
+
+        :param runtime_task: runtime task with requirement
+        :type runtime_task: :class:`avocado.core.task.runtime.RuntimeTask`
+        :param source: path in the spawner specific environment
+        :type source: str
+        :param destination: path in the host (Avocado job) environment
+        :type destination: str
+        """
+
 
 class DeploymentSpawner(Spawner):
     """Spawners that needs basic deployment are based on this class.

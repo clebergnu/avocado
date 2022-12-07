@@ -1,5 +1,6 @@
 import asyncio
 import os
+import shutil
 import socket
 import sys
 
@@ -93,3 +94,8 @@ class ProcessSpawner(Spawner, SpawnerMixin):
         kind = runtime_task.task.runnable.kind
         name = runtime_task.task.runnable.kwargs.get("name")
         cache.set_requirement(ENVIRONMENT_TYPE, ENVIRONMENT, kind, name, False)
+
+    async def copy_from(self, runtime_task, source, destination):
+        if source == destination:
+            return
+        shutil.copy(source, destination)
