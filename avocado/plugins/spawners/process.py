@@ -33,7 +33,10 @@ class ProcessSpawner(Spawner, SpawnerMixin):
         args = runner[1:] + ["task-run"] + task.get_command_args()
         runner = runner[0]
         # When running Avocado Python modules, the interpreter on the new
-        # process needs to know where Avocado can be found.
+        # process needs to know where Avocado can be found.  This is usually
+        # handled by the Avocado installation being available to the standard
+        # Python installation, but if Avocado is running from an uninstalled
+        # egg, it needs extra help.
         env = os.environ.copy()
         env["PYTHONPATH"] = ":".join(p for p in set(sys.path))
 
