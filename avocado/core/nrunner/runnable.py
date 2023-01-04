@@ -10,6 +10,7 @@ import pkg_resources
 
 from avocado.core.nrunner.config import ConfigDecoder, ConfigEncoder
 from avocado.core.settings import settings
+from avocado.core.utils.eggenv import get_python_path_env_if_egg
 
 LOG = logging.getLogger(__name__)
 
@@ -451,7 +452,10 @@ class Runnable:
             return standalone_executable_cmd
 
         # When running Avocado Python modules, the interpreter on the new
-        # process needs to know where Avocado can be found.
+        # process needs to know where Avocado can be found.  This is usually
+        # handled by the Avocado installation being available to the standard
+        # Python installation, but if Avocado is running from an uninstalled
+        # egg, it needs extra help.
         dist = pkg_resources.get_distribution("avocado-framework")
         if dist.location.endswith(".egg") and os.path.isfile(dist.location):
             env = os.environ.copy()
@@ -471,7 +475,7 @@ class Runnable:
             full_module_name = f"avocado.plugins.runners.{module_name}"
             candidate_cmd = [sys.executable, "-m", full_module_name]
             if Runnable.is_kind_supported_by_runner_command(
-                kind, candidate_cmd, env=env
+                kind, candidate_cmd, env=get_python_path_env_if_egg()
             ):
                 runners_registry[kind] = candidate_cmd
                 return candidate_cmd
