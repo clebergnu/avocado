@@ -397,14 +397,10 @@ class Runnable:
         return capabilities
 
     @staticmethod
-    def is_kind_supported_by_runner_command(
-        kind, runner_cmd, capabilities=None, env=None
-    ):
+    def is_kind_supported_by_runner_command(kind, runner_cmd, capabilities=None):
         """Checks if a runner command that seems a good fit declares support."""
         if capabilities is None:
-            capabilities = Runnable.get_capabilities_from_runner_command(
-                runner_cmd, env
-            )
+            capabilities = Runnable.get_capabilities_from_runner_command(runner_cmd)
         return kind in capabilities.get("runnables", [])
 
     @staticmethod
@@ -443,11 +439,6 @@ class Runnable:
         if runner_cmd is not None:
             return runner_cmd
 
-        # When running Avocado Python modules, the interpreter on the new
-        # process needs to know where Avocado can be found.
-        env = os.environ.copy()
-        env["PYTHONPATH"] = ":".join(p for p in set(sys.path))
-
         standalone_executable_cmd = [f"avocado-runner-{kind}"]
         if Runnable.is_kind_supported_by_runner_command(
             kind, standalone_executable_cmd
@@ -463,9 +454,7 @@ class Runnable:
         if Runnable._module_exists(module_name):
             full_module_name = f"avocado.plugins.runners.{module_name}"
             candidate_cmd = [sys.executable, "-m", full_module_name]
-            if Runnable.is_kind_supported_by_runner_command(
-                kind, candidate_cmd, env=env
-            ):
+            if Runnable.is_kind_supported_by_runner_command(kind, candidate_cmd):
                 runners_registry[kind] = candidate_cmd
                 return candidate_cmd
 
