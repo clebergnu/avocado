@@ -39,9 +39,14 @@ class ProcessSpawner(Spawner, SpawnerMixin):
         # Python installation, but if Avocado is running from an uninstalled
         # egg, it needs extra help.
         dist = pkg_resources.get_distribution("avocado-framework")
-        env = os.environ.copy()
-        python_path = env.get("PYTHONPATH", "")
-        env["PYTHONPATH"] = f"{dist.location}:{python_path}"
+        if dist.location.endswith(".egg") and os.path.isfile(dist.location):
+            env = os.environ.copy()
+            python_path = env.get("PYTHONPATH", "")
+            python_path_entries = python_path.split(":")
+            if not dist.location in python_path_entries:
+                env["PYTHONPATH"] = f"{dist.location}:{python_path}"
+        else:
+            env = None
 
         # pylint: disable=E1133
         try:

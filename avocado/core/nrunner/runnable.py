@@ -453,9 +453,14 @@ class Runnable:
         # When running Avocado Python modules, the interpreter on the new
         # process needs to know where Avocado can be found.
         dist = pkg_resources.get_distribution("avocado-framework")
-        env = os.environ.copy()
-        python_path = env.get("PYTHONPATH", "")
-        env["PYTHONPATH"] = f"{dist.location}:{python_path}"
+        if dist.location.endswith(".egg") and os.path.isfile(dist.location):
+            env = os.environ.copy()
+            python_path = env.get("PYTHONPATH", "")
+            python_path_entries = python_path.split(":")
+            if not dist.location in python_path_entries:
+                env["PYTHONPATH"] = f"{dist.location}:{python_path}"
+        else:
+            env = None
 
         # attempt to find Python module files that are named after the
         # runner convention within the avocado.plugins.runners namespace dir.
