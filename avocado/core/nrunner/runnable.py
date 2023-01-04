@@ -443,17 +443,19 @@ class Runnable:
         if runner_cmd is not None:
             return runner_cmd
 
-        # When running Avocado Python modules, the interpreter on the new
-        # process needs to know where Avocado can be found.
-        env = os.environ.copy()
-        env["PYTHONPATH"] = ":".join(p for p in set(sys.path))
-
         standalone_executable_cmd = [f"avocado-runner-{kind}"]
         if Runnable.is_kind_supported_by_runner_command(
             kind, standalone_executable_cmd
         ):
             runners_registry[kind] = standalone_executable_cmd
             return standalone_executable_cmd
+
+        # When running Avocado Python modules, the interpreter on the new
+        # process needs to know where Avocado can be found.
+        dist = pkg_resources.get_distribution("avocado-framework")
+        env = os.environ.copy()
+        python_path = env.get("PYTHONPATH", "")
+        env["PYTHONPATH"] = f"{dist.location}:{python_path}"
 
         # attempt to find Python module files that are named after the
         # runner convention within the avocado.plugins.runners namespace dir.

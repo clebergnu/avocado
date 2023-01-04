@@ -1,7 +1,8 @@
 import asyncio
 import os
 import socket
-import sys
+
+import pkg_resources
 
 from avocado.core.dependencies.requirements import cache
 from avocado.core.plugin_interfaces import Spawner
@@ -37,8 +38,10 @@ class ProcessSpawner(Spawner, SpawnerMixin):
         # handled by the Avocado installation being available to the standard
         # Python installation, but if Avocado is running from an uninstalled
         # egg, it needs extra help.
+        dist = pkg_resources.get_distribution("avocado-framework")
         env = os.environ.copy()
-        env["PYTHONPATH"] = ":".join(p for p in set(sys.path))
+        python_path = env.get("PYTHONPATH", "")
+        env["PYTHONPATH"] = f"{dist.location}:{python_path}"
 
         # pylint: disable=E1133
         try:
@@ -47,7 +50,7 @@ class ProcessSpawner(Spawner, SpawnerMixin):
                 *args,
                 stdout=asyncio.subprocess.DEVNULL,
                 stderr=asyncio.subprocess.DEVNULL,
-                env=env
+                env=env,
             )
         except (FileNotFoundError, PermissionError):
             return False
