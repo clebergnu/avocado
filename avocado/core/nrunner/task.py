@@ -24,7 +24,11 @@ class StatusEncoder(json.JSONEncoder):
     def default(self, o):
         if isinstance(o, bytes):
             return {"__base64_encoded__": base64.b64encode(o).decode("ascii")}
-        return json.JSONEncoder.default(self, o)
+        try:
+            result = json.JSONEncoder.default(self, o)
+        except TypeError:
+            result = str(o)
+        return result
 
 
 def json_dumps(data):
