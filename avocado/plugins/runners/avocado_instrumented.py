@@ -37,7 +37,14 @@ class RunnerLogHandler(logging.Handler):
 
     def emit(self, record):
         msg = self.format(record)
-        self.queue.put(self.message.get(msg, **self.kwargs))
+        kwargs = {
+            "log_name": record.name,
+            "log_level": record.levelname,
+            "log_msg": record.msg,
+            "log_args": record.args,
+        }
+        kwargs.update(**self.kwargs)
+        self.queue.put(self.message.get(msg, **kwargs))
 
 
 class StreamToQueue:
