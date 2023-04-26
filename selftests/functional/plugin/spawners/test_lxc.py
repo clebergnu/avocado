@@ -20,7 +20,7 @@ class LXCSpawnerTest(Test):
                 os.path.join(BASEDIR, "examples", "tests", "gendata.py")
             ],
             "run.spawner": "lxc",
-            "spawner.lxc.slots": "c1,c2,c3",
+            "spawner.lxc.slots": ["c1", "c2", "c3"],
         }
 
         lxc.LXC_AVAILABLE = True
@@ -109,7 +109,7 @@ class LXCSpawnerTest(Test):
         """Checks if no slots could be used from cache with expected errors."""
         runtime_task = mock.MagicMock()
         runtime_task.spawner_handle = None
-        self.spawner.config["spawner.lxc.slots"] = ""
+        self.spawner.config["spawner.lxc.slots"] = []
 
         to_spawn = self.spawner.spawn_task(runtime_task)
         with mock.patch.object(

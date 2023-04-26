@@ -52,7 +52,7 @@ class LXCSpawnerInit(Init):
 
         help_msg = "List of already available container slots to spawn in"
         settings.register_option(
-            section=section, key="slots", help_msg=help_msg, default=""
+            section=section, key="slots", help_msg=help_msg, key_type=list, default=[]
         )
 
         help_msg = "Distribution for the LXC container"
@@ -142,7 +142,7 @@ class LXCSpawner(Spawner, SpawnerMixin):
         if len(LXCSpawner.slots_cache) == 0:
             # TODO: consider whether to provide persistence across runs via external storage
             LXCSpawner.slots_cache = {
-                k: False for k in self.config.get("spawner.lxc.slots").split(",") if k
+                k: False for k in self.config.get("spawner.lxc.slots") if k
             }
             # TODO: spawner can look for free containers directly and populate these slots
             # for c in lxcontainer.list_containers(as_object=True): ...
