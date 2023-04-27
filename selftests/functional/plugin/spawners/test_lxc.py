@@ -12,6 +12,11 @@ from selftests.utils import BASEDIR
 LXC_BACKEND = mock.MagicMock()
 
 
+def incompatible_python_version():
+    return sys.version_info.major == 3 and sys.version_info.minor <= 7
+
+
+@skipIf(incompatible_python_version(), "Not compatible with Python under 3.7.0")
 @mock.patch("avocado.plugins.spawners.lxc.lxc", LXC_BACKEND)
 class LXCSpawnerTest(Test):
     def setUp(self):
@@ -29,7 +34,6 @@ class LXCSpawnerTest(Test):
             self.spawner = LXCSpawner(config, job)
             LXCSpawner.slots_cache = {}
 
-    @skipIf(sys.version_info > (3, 7, 0), "Not compatible with Python under 3.7.0")
     def test_slots_cache_custom(self):
         """Checks if custom (scheduler predefined) slots could be used from cache."""
         runtime_task = mock.MagicMock()
@@ -50,7 +54,6 @@ class LXCSpawnerTest(Test):
             {"c1": False, "c2": False, "c3": False, "c100": False},
         )
 
-    @skipIf(sys.version_info > (3, 7, 0), "Not compatible with Python under 3.7.0")
     def test_slots_cache_free(self):
         """Checks if free slots could be used from cache."""
         runtime_task = mock.MagicMock()
@@ -70,7 +73,6 @@ class LXCSpawnerTest(Test):
             LXCSpawner.slots_cache, {"c1": False, "c2": False, "c3": False}
         )
 
-    @skipIf(sys.version_info > (3, 7, 0), "Not compatible with Python under 3.7.0")
     def test_slots_cache_free_next(self):
         """Checks if free slots could be used from cache with some slots occupied."""
         runtime_task = mock.MagicMock()
@@ -90,7 +92,6 @@ class LXCSpawnerTest(Test):
         # c1 remains occupied throughout this test run
         self.assertEqual(LXCSpawner.slots_cache, {"c1": True, "c2": False})
 
-    @skipIf(sys.version_info > (3, 7, 0), "Not compatible with Python under 3.7.0")
     def test_slots_cache_full(self):
         """Checks if free slots could be used from cache with some slots occupied."""
         runtime_task = mock.MagicMock()
@@ -110,7 +111,6 @@ class LXCSpawnerTest(Test):
         LXC_BACKEND.Container.assert_not_called()
         self.assertEqual(LXCSpawner.slots_cache, {"c1": True})
 
-    @skipIf(sys.version_info > (3, 7, 0), "Not compatible with Python under 3.7.0")
     def test_slots_cache_empty(self):
         """Checks if no slots could be used from cache with expected errors."""
         runtime_task = mock.MagicMock()
