@@ -34,6 +34,9 @@ class LXCSpawnerTest(Test):
             self.spawner = LXCSpawner(config, job)
             LXCSpawner.slots_cache = {}
 
+    def tearDown(self):
+        LXC_BACKEND.reset_mock()
+
     def test_slots_cache_custom(self):
         """Checks if custom (scheduler predefined) slots could be used from cache."""
         runtime_task = mock.MagicMock()
