@@ -38,6 +38,7 @@ Contents:
    blueprints/BP003
    blueprints/BP004
    blueprints/BP005
+   blueprints/BP006
 
 .. toctree::
    :caption: Learn More

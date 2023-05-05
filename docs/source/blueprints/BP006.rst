@@ -1,0 +1,417 @@
+BP006
+#####
+
+:Number: BP006
+:Title: Test outcome based on its output (AKA output-check)
+:Author: Cleber Rosa <crosa@redhat.com>
+:Discussions-To: avocado-devel@redhat.com
+:Reviewers:
+:Created:
+:Type: Architecture Blueprint
+:Status: Draft
+
+.. contents:: Table of Contents
+
+TL;DR
+*****
+
+The legacy runner implementation had a builtin feature that was
+capable of deciding on the outcome of tests based on the output they
+would generate.  Given that this pattern is quite common, it's
+understood that this functionality should be reimplemented in the new
+runner architecture.  The goal of this BluePrint is to decide on how
+to do so.
+
+Motivations
+***********
+
+The main motivation behind this BluePrint is to allow Avocado to be
+used (again) in one common use case pattern in software tests.
+
+This use case pattern is based on a special execution of a test which
+generates a reference (also known as "golden") output.  Then,
+subsequent executions of the same test will have its outcome depedant
+(partially or completely) on the generated output and if it's similar
+(or identical) to the reference output.
+
+Previous implementation
+***********************
+
+The previous implementation was tied to the legacy runner.  The
+examples given here are based on Avocado version 92.1, which needs a
+``--test-runner=runner`` switch to activate the legacy runner.
+
+We'll be using the ``/bin/uname`` utility as a test.  This utility,
+without any command line switches generates (on a Linux system)::
+
+  $ /bin/uname
+  Linux
+
+Just to be sure, the ``Linux`` output is generated on the ``STDOUT``,
+and no output is generated on the ``STDERR`` on this ocasion.
+
+Let's assume that both the content of the ``STDOUT`` (containing
+``Linux``) and the content of the ``STDERR`` (or the lack of any
+content to be precise) are the conditions for a successfull execution
+of that "test".  Under Avocado legacy runner on version 92.1, a user
+could run::
+
+  $ avocado run --test-runner=runner --output-check-record both -- /bin/uname
+
+The output would be similar to::
+
+  JOB ID     : 544f17afff172c43209fddc35edf7851c7b939aa
+  JOB LOG    : /root/avocado/job-results/job-2023-05-04T21.58-544f17a/job.log
+   (1/1) /bin/uname: PASS (0.01 s)
+  RESULTS    : PASS 1 | ERROR 0 | FAIL 0 | SKIP 0 | WARN 0 | INTERRUPT 0 | CANCEL 0
+  JOB TIME   : 0.12 s
+
+Additionally, the following files would have been created::
+
+  $ cat /bin/uname.data/stdout.expected
+  Linux
+
+  $ wc -l /bin/uname.data/stderr.expected
+  0 /bin/uname.data/stderr.expected
+
+From this point on, all future executions of ``/bin/uname`` as a test,
+would include the comparison of the content generated during that one
+execution, with the previously recorded (and now expected)
+``/bin/uname.data/stdout.expected`` and
+``/bin/uname.data/stderr.expected`` files.
+
+If the ``/bin/uname`` were to produce anything other than ``Linux`` on
+the ``STDOUT``, or produce anything at all on ``STDERR``, then the
+test would fail.  To prove the point, let's taint the reference
+``/bin/uname.data/stdout.expected`` and re-run the test::
+
+  $ echo 'Non-Linux' > /bin/uname.data/stdout.expected
+  $ avocado run --test-runner=runner -- /bin/uname
+  JOB ID     : 70f002c107ed638ecc87371a45d931a7d5239e72
+  JOB LOG    : /root/avocado/job-results/job-2023-05-04T22.06-70f002c/job.log
+   (1/1) /bin/uname: FAIL: Actual test Stdout differs from expected one (0.01 s)
+  RESULTS    : PASS 0 | ERROR 0 | FAIL 1 | SKIP 0 | WARN 0 | INTERRUPT 0 | CANCEL 0
+  JOB TIME   : 0.12 s
+
+============================================
+ Limitations of the previous implementation
+============================================
+
+* The reference output is tied to the location of the file that
+  contains the test.  As it can be seen in the example used above,
+  this is not practical for some filesystem paths that may be
+  system-wide and even read-only.
+
+* The "channels" of output that are compared are limited, that is,
+  only the standard I/O streams ``STDOUT`` and ``STDERR`` can be used
+  for comparison.
+
+* Only a full match is considered to be a successfull run.  This
+  causes difficulties when the output generated contains patterns that
+  change, such as timestamps.
+
+* It forced the concept of checking against ``STDOUT`` and ``STDERR``
+  to be applied to tests that would not normally have any awareness of
+  those I/O streams.
+
+===================================================
+ Challenges introduced by the nrunner architecture
+===================================================
+
+Apart from the challenges that are part of the limitations of the
+previous implementations, the nrunner architecture brings additional
+challenges (and some opportunities).
+
+* How to apply the concept of output matching to a much more abstract
+  concept of tests.
+
+  That is, tests under nrunner can be pretty much anything a plugin
+  writer determines.  The ``magic`` (FIXME: add link to example)
+  generates no content at all, much less has support for the ``STDOUT``
+  or ``STDERR`` I/O streams.  Tests may not even run on separate process
+  that would let them have a clear separation of those channels.
+
+* How to implement consistent output matching when one can have
+  standalone runners.  The question of how to have the same match
+  policies (refer to the following section) applied to the output
+  produced by varied runners needs to be addressed.
+
+Proposed implementation
+***********************
+
+To back the proposed implementation, a few new concepts have to be
+introduced and discussed first.
+
+==============
+ Match policy
+==============
+
+As explained before, the previous implementaiton had a all or nothing
+match mechanism.  Either all the content fully matches what's recorded
+in the reference, of the test execution becomes a ``FAIL``.
+
+Numeric Margin of Error
+=======================
+
+It can be helpful to have custom match policies.  For instance, a
+function such as::
+
+  def match_margin_of_error(reference, actual, **kwargs):
+      margin = kwargs.get("margin", 0.05)
+      upper_bound = reference + (reference * margin)
+      lower_bound = reference - (reference * margin)
+      return lower_bound >= actual <= upper_bound
+
+Could be used to implement a "margin of error" match policy that would
+not flag as failures every minor variation of content.
+
+Change Treshhold
+================
+
+One other use case is to allow for incremental changes to be
+considered normal.  For
+instance, a regular execution of the command ``qemu-system-x86_64 -machine
+help`` produces::
+
+  Supported machines are:
+  microvm              microvm (i386)
+  xenfv-4.2            Xen Fully-virtualized PC
+  xenfv                Xen Fully-virtualized PC (alias of xenfv-3.1)
+  xenfv-3.1            Xen Fully-virtualized PC
+  pc                   Standard PC (i440FX + PIIX, 1996) (alias of pc-i440fx-7.0)
+  pc-i440fx-7.0        Standard PC (i440FX + PIIX, 1996) (default)
+  pc-i440fx-6.2        Standard PC (i440FX + PIIX, 1996)
+  pc-i440fx-6.1        Standard PC (i440FX + PIIX, 1996)
+  pc-i440fx-6.0        Standard PC (i440FX + PIIX, 1996)
+  pc-i440fx-5.2        Standard PC (i440FX + PIIX, 1996)
+  pc-i440fx-5.1        Standard PC (i440FX + PIIX, 1996)
+  pc-i440fx-5.0        Standard PC (i440FX + PIIX, 1996)
+  pc-i440fx-4.2        Standard PC (i440FX + PIIX, 1996)
+  pc-i440fx-4.1        Standard PC (i440FX + PIIX, 1996)
+  pc-i440fx-4.0        Standard PC (i440FX + PIIX, 1996)
+  pc-i440fx-3.1        Standard PC (i440FX + PIIX, 1996)
+  pc-i440fx-3.0        Standard PC (i440FX + PIIX, 1996)
+  pc-i440fx-2.9        Standard PC (i440FX + PIIX, 1996)
+  pc-i440fx-2.8        Standard PC (i440FX + PIIX, 1996)
+  pc-i440fx-2.7        Standard PC (i440FX + PIIX, 1996)
+  pc-i440fx-2.6        Standard PC (i440FX + PIIX, 1996)
+  pc-i440fx-2.5        Standard PC (i440FX + PIIX, 1996)
+  pc-i440fx-2.4        Standard PC (i440FX + PIIX, 1996)
+  pc-i440fx-2.3        Standard PC (i440FX + PIIX, 1996)
+  pc-i440fx-2.2        Standard PC (i440FX + PIIX, 1996)
+  pc-i440fx-2.12       Standard PC (i440FX + PIIX, 1996)
+  pc-i440fx-2.11       Standard PC (i440FX + PIIX, 1996)
+  pc-i440fx-2.10       Standard PC (i440FX + PIIX, 1996)
+  pc-i440fx-2.1        Standard PC (i440FX + PIIX, 1996)
+  pc-i440fx-2.0        Standard PC (i440FX + PIIX, 1996)
+  pc-i440fx-1.7        Standard PC (i440FX + PIIX, 1996) (deprecated)
+  pc-i440fx-1.6        Standard PC (i440FX + PIIX, 1996) (deprecated)
+  pc-i440fx-1.5        Standard PC (i440FX + PIIX, 1996) (deprecated)
+  pc-i440fx-1.4        Standard PC (i440FX + PIIX, 1996) (deprecated)
+  q35                  Standard PC (Q35 + ICH9, 2009) (alias of pc-q35-7.0)
+  pc-q35-7.0           Standard PC (Q35 + ICH9, 2009)
+
+Then, suppose one new machine type (``my-custom-machine``) gets
+introduced::
+
+  Supported machines are:
+  my-custom            My custom machine
+  microvm              microvm (i386)
+  xenfv-4.2            Xen Fully-virtualized PC
+  xenfv                Xen Fully-virtualized PC (alias of xenfv-3.1)
+  xenfv-3.1            Xen Fully-virtualized PC
+  pc                   Standard PC (i440FX + PIIX, 1996) (alias of pc-i440fx-7.0)
+  pc-i440fx-7.0        Standard PC (i440FX + PIIX, 1996) (default)
+  pc-i440fx-6.2        Standard PC (i440FX + PIIX, 1996)
+  pc-i440fx-6.1        Standard PC (i440FX + PIIX, 1996)
+  pc-i440fx-6.0        Standard PC (i440FX + PIIX, 1996)
+  pc-i440fx-5.2        Standard PC (i440FX + PIIX, 1996)
+  pc-i440fx-5.1        Standard PC (i440FX + PIIX, 1996)
+  pc-i440fx-5.0        Standard PC (i440FX + PIIX, 1996)
+  pc-i440fx-4.2        Standard PC (i440FX + PIIX, 1996)
+  pc-i440fx-4.1        Standard PC (i440FX + PIIX, 1996)
+  pc-i440fx-4.0        Standard PC (i440FX + PIIX, 1996)
+  pc-i440fx-3.1        Standard PC (i440FX + PIIX, 1996)
+  pc-i440fx-3.0        Standard PC (i440FX + PIIX, 1996)
+  pc-i440fx-2.9        Standard PC (i440FX + PIIX, 1996)
+  pc-i440fx-2.8        Standard PC (i440FX + PIIX, 1996)
+  pc-i440fx-2.7        Standard PC (i440FX + PIIX, 1996)
+  pc-i440fx-2.6        Standard PC (i440FX + PIIX, 1996)
+  pc-i440fx-2.5        Standard PC (i440FX + PIIX, 1996)
+  pc-i440fx-2.4        Standard PC (i440FX + PIIX, 1996)
+  pc-i440fx-2.3        Standard PC (i440FX + PIIX, 1996)
+  pc-i440fx-2.2        Standard PC (i440FX + PIIX, 1996)
+  pc-i440fx-2.12       Standard PC (i440FX + PIIX, 1996)
+  pc-i440fx-2.11       Standard PC (i440FX + PIIX, 1996)
+  pc-i440fx-2.10       Standard PC (i440FX + PIIX, 1996)
+  pc-i440fx-2.1        Standard PC (i440FX + PIIX, 1996)
+  pc-i440fx-2.0        Standard PC (i440FX + PIIX, 1996)
+  pc-i440fx-1.7        Standard PC (i440FX + PIIX, 1996) (deprecated)
+  pc-i440fx-1.6        Standard PC (i440FX + PIIX, 1996) (deprecated)
+  pc-i440fx-1.5        Standard PC (i440FX + PIIX, 1996) (deprecated)
+  pc-i440fx-1.4        Standard PC (i440FX + PIIX, 1996) (deprecated)
+  q35                  Standard PC (Q35 + ICH9, 2009) (alias of pc-q35-7.0)
+  pc-q35-7.0           Standard PC (Q35 + ICH9, 2009)
+
+If the configured change treshold allowance is 5% and the output above
+is produced, the output check would be considered successfull.  But,
+if a bug is introduced that causes all the other machines types to go
+missing, that is, running ``qemu-system-x86_64 -machine help`` results
+in::
+
+  Supported machines are:
+  my-custom            My custom machine
+
+It would exceed the change treshold allowance and result in a match
+failure.  Such as policy could be implemented roughly as::
+
+  def match_change_treshold(reference, actual, **kwargs):
+      # this function would return something similar to "git diff --stat"
+      changed_lines = get_lines_of_diff(reference, actual)
+
+      treshold = kwargs.get("treshold", 0.03)
+      return (count_lines(reference) * treshold) <= changed_lines
+
+=================
+ Output Channels
+=================
+
+A test should provide information about the output it generates.  For
+simplicity sake, it's required that each output channel preserves its
+content in a file.
+
+It's still to be defined if:
+
+* The list of output channels will be needed ahead of time (for
+  instance, from the resolver or ``avocado-runner-${kind}
+  capabilities``, like in::
+
+    $ avocado-runner-exec-test capabilities | python3 -m json.tool
+    {
+        "runnables": [
+            "exec-test"
+        ],
+        "commands": [
+            "capabilities",
+            "runnable-run",
+            "runnable-run-recipe",
+            "task-run",
+            "task-run-recipe"
+        ],
+        "configuration_used": [
+            "run.keep_tmp",
+            "runner.exectest.exitcodes.skip"
+        ],
+        "output_produced": [
+            "stdout",
+            "stderr"
+        ]
+    }
+
+* As part the runner messages at runtime, that is::
+
+    $ avocado-runner-exec-test runnable-run -k exec-test -u /bin/uname
+    {'status': 'started', 'time': 268933.149016764}
+    {'status': 'running', 'time': 268933.149923951}
+    {'type': 'stdout', 'log': b'Linux\n', 'status': 'running', 'time': 268933.160111141}
+    {'type': 'stderr', 'log': b'', 'status': 'running', 'time': 268933.160145956}
+    {'result': 'pass', 'returncode': 0, 'status': 'finished', 'time': 268933.160157613, 'output_produced': ['stdout', 'stderr']}
+
+====================================
+ Chaining and Overriding of results
+====================================
+
+If the code that implements the output check were to be implemented
+within the runners, there will most probably be a lot of code
+duplication and possibly incoherency in those implementations.  Also,
+it'd be more costly to implement that repeatedly.
+
+To avoid those problems it makes sense to have a separate component
+that will be called at a different phase to check the output produced.
+But this raises the question of the communication or overriding of
+results.
+
+Suppose the actual execution of a test results in a ``fail`` (or
+``error``) There's no point in performing the output check because
+both the execution and output check must succeed for the test not to
+end in a final result of ``fail``.
+
+Now, suppose the actual execution of a test results in a ``pass``.
+Then the output check component verifies the output and decides that
+they are not consistent, and produces a ``fail``.
+
+Other possibility is when a test results in a ``skip``.  Even though
+this is a "beningn" result, in the sense that it does not represent a
+failure, it makes no sense to perform the output check.
+
+Those use cases demonstrate that there must be logic to:
+
+* Chaining other actions depending on the test results
+
+* Overriding test results in later phases
+
+The existing extensible interface in
+:meth:`avocado.core.plugin_interfaces.PostTest.post_test_runnables`
+may be a starting point for such functionality.
+
+Proposed user experience
+************************
+
+Users would execute tests in a special mode, provided by the command
+``record-output``.  Example::
+
+  $ avocado record-output /reference/to/a/test
+  JOB ID     : 4098bc8715ce63f8fbbb1385006cb7ce5c34be07
+  JOB LOG    : /home/$USER/avocado/record-output/job-2023-04-25T16.11-4098bc8/job.log
+   (1/1) /reference/to/a/test: STARTED
+   (1/1) /reference/to/a/test: PASS (2.31 s)
+  RESULTS    : PASS 1 | ERROR 0 | FAIL 0 | SKIP 0 | WARN 0 | INTERRUPT 0 | CANCEL 0
+  JOB HTML   : /home/cleber/avocado/record-output/job-2023-04-25T16.11-4098bc8/results.html
+  JOB TIME   : 1.19 s
+
+The execution of tests that conform to a standard will, by default,
+have the "check-output" feature enabled by default.
+
+Goals of this BluePrint
+***********************
+
+1. Describe the user experience.
+
+2. Propose an architecture for the implementation of the
+   "check-output" feature.
+
+3. Itemize the expected work for actually implementing the feature.
+
+Backwards Compatibility
+***********************
+
+Given that the previous implementation has been disabled (along with
+the legacy runner) for a number of Avocado releases, it's not expected
+to provide support for running tests (and checking output) produced under
+the legacy implementation.
+
+The only requirement on users should be to have the output for their
+tests re-recorded (by using the ``record-output`` command) presented
+earlier.  From this point on, the feature should be ready to run in
+regular test execution (that is, ``avocado run`` commands).
+
+Security Implications
+*********************
+
+None that we can determine at this point.
+
+How to Teach This
+*****************
+
+The distinctive features should be properly documented.
+
+Related Issues
+**************
+
+
+Future work
+***********
+
+
+References
+**********
