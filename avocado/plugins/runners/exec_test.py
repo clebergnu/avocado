@@ -33,6 +33,8 @@ class ExecTestRunner(BaseRunner):
 
     CONFIGURATION_USED = ["run.keep_tmp", "runner.exectest.exitcodes.skip"]
 
+    OUTPUT_PRODUCED = ["stdout", "stderr"]
+
     def _process_final_status(
         self, process, runnable, stdout=None, stderr=None
     ):  # pylint: disable=W0613

@@ -205,6 +205,7 @@ class BaseRunnerApp:
             "runnables": self.RUNNABLE_KINDS_CAPABLE,
             "commands": self.get_commands(),
             "configuration_used": self.get_configuration_used_by_runners(),
+            "output_produced": self.get_output_produced_by_runners(),
         }
 
     def get_runner_from_runnable(self, runnable):
@@ -236,6 +237,24 @@ class BaseRunnerApp:
                 except ImportError:
                     continue
         return list(set(config_used))
+
+    def get_output_produced_by_runners(self):
+        """Returns the output produced by runners.
+
+        :returns: the configuration keys (aka namespaces) used by known runners
+        :rtype: list
+        """
+        output_produced = []
+        for kind in self.RUNNABLE_KINDS_CAPABLE:
+            for ep in pkg_resources.iter_entry_points(
+                "avocado.plugins.runnable.runner", kind
+            ):
+                try:
+                    runner = ep.load()
+                    output_produced += runner.OUTPUT_PRODUCED
+                except ImportError:
+                    continue
+        return list(set(output_produced))
 
     def command_capabilities(self, _):
         """

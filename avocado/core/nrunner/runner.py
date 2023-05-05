@@ -46,6 +46,9 @@ class BaseRunner(RunnableRunner):
     #: this runners makes use of.
     CONFIGURATION_USED = []
 
+    #: The output produced by the runners.
+    OUTPUT_PRODUCED = []
+
     @staticmethod
     def prepare_status(status_type, additional_info=None):
         """Prepare a status dict with some basic information.
