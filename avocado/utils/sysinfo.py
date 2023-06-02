@@ -188,7 +188,7 @@ class Command(Collectible):
                 f"was not found)"
             )
         except Exception as exc:  # pylint: disable=W0703, W0612
-            raise CollectibleException(f'Could not execute "{self.cmd}": ' "{exc}")
+            raise CollectibleException(f'Could not execute "{self.cmd}": "{exc}"')
 
 
 class Daemon(Command):
