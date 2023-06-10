@@ -5,7 +5,7 @@ import unittest
 from avocado import Test, skipUnless
 from avocado.core import exit_codes
 from avocado.utils import process, script
-from selftests.utils import AVOCADO, TestCaseTmpDir
+from selftests.utils import AVOCADO
 
 SINGLE_SUCCESS_CHECK = '''#!/usr/bin/env python3
 
@@ -94,7 +94,7 @@ class FailTest(Test):
 '''
 
 
-class BasicTest(Test, TestCaseTmpDir):
+class BasicTest(Test):
 
     """
     :avocado: dependency={"type": "package", "name": "podman", "action": "check"}
@@ -118,12 +118,12 @@ class BasicTest(Test, TestCaseTmpDir):
         spawner_command = ""
         if spawner == "podman":
             spawner_command = "--spawner=podman --spawner-podman-image=fedora:36"
-        return f"{AVOCADO} run {spawner_command} --job-results-dir {self.tmpdir.name} {path}"
+        return f"{AVOCADO} run {spawner_command} --job-results-dir {self.workdir} {path}"
 
     @skipUnless(os.getenv("CI"), skip_package_manager_message)
     def test_single_success(self):
         with script.Script(
-            os.path.join(self.tmpdir.name, "test_single_success.py"),
+            os.path.join(self.workdir, "test_single_success.py"),
             SINGLE_SUCCESS_CHECK,
         ) as test:
             command = self.get_command(test.path)
@@ -137,7 +137,7 @@ class BasicTest(Test, TestCaseTmpDir):
                 "bash",
                 result.stdout_text,
             )
-            test_results_path = os.path.join(self.tmpdir.name, "latest", "test-results")
+            test_results_path = os.path.join(self.workdir, "latest", "test-results")
             self.assertEqual(
                 len(os.listdir(test_results_path)),
                 2,
@@ -152,7 +152,7 @@ class BasicTest(Test, TestCaseTmpDir):
                 "Dependency directories is missing.",
             )
             job_dependency_dir = os.path.join(
-                self.tmpdir.name, "latest", "dependencies"
+                self.workdir, "latest", "dependencies"
             )
             self.assertEqual(
                 len(os.listdir(job_dependency_dir)),
@@ -163,7 +163,7 @@ class BasicTest(Test, TestCaseTmpDir):
     @skipUnless(os.getenv("CI"), skip_package_manager_message)
     def test_single_fail(self):
         with script.Script(
-            os.path.join(self.tmpdir.name, "test_single_fail.py"), SINGLE_FAIL_CHECK
+            os.path.join(self.workdir, "test_single_fail.py"), SINGLE_FAIL_CHECK
         ) as test:
             command = self.get_command(test.path)
             result = process.run(command, ignore_status=True)
@@ -184,7 +184,7 @@ class BasicTest(Test, TestCaseTmpDir):
     @skipUnless(os.getenv("CI"), skip_install_message)
     def test_multiple_success(self):
         with script.Script(
-            os.path.join(self.tmpdir.name, "test_multiple_success.py"), MULTIPLE_SUCCESS
+            os.path.join(self.workdir, "test_multiple_success.py"), MULTIPLE_SUCCESS
         ) as test:
             command = self.get_command(test.path)
             result = process.run(command, ignore_status=True)
@@ -201,7 +201,7 @@ class BasicTest(Test, TestCaseTmpDir):
     @skipUnless(os.getenv("CI"), skip_install_message)
     def test_multiple_fails(self):
         with script.Script(
-            os.path.join(self.tmpdir.name, "test_multiple_fail.py"), MULTIPLE_FAIL
+            os.path.join(self.workdir, "test_multiple_fail.py"), MULTIPLE_FAIL
         ) as test:
             command = self.get_command(test.path)
             result = process.run(command, ignore_status=True)
