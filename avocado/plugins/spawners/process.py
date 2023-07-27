@@ -1,5 +1,6 @@
 import asyncio
 import os
+import signal
 import socket
 
 from avocado.core.dependencies.requirements import cache
@@ -7,6 +8,7 @@ from avocado.core.plugin_interfaces import Spawner
 from avocado.core.spawners.common import SpawnerMixin, SpawnMethod
 from avocado.core.teststatus import STATUSES_NOT_OK
 from avocado.core.utils.eggenv import get_python_path_env_if_egg
+from avocado.utils.process import kill_process_tree
 
 ENVIRONMENT_TYPE = "local"
 ENVIRONMENT = socket.gethostname()
@@ -74,7 +76,35 @@ class ProcessSpawner(Spawner, SpawnerMixin):
 
     @staticmethod
     async def terminate_task(runtime_task):  # pylint: disable=W0221
-        runtime_task.spawner_handle.process.terminate()
+        term_attempts = 0
+        kill_attempts = 0
+        while term_attempts < 3:
+            try:
+                kill_process_tree(runtime_task.spawner_handle.process.pid,
+                                  signal.SIGTERM, timeout=1.0)
+            except RuntimeError:
+                # Some of the processes might have already finished
+                pass
+            term_attempts += 1
+            await asyncio.sleep(0.05)
+            if not ProcessSpawner.is_task_alive(runtime_task):
+                return True
+        while kill_attempts < 3:
+            try:
+                kill_process_tree(runtime_task.spawner_handle.process.pid,
+                                  signal.SIGKILL, timeout=1.0)
+            except RuntimeError:
+                # Some of the processes might have already finished
+                pass
+            kill_attempts += 1
+            await asyncio.sleep(0.05)
+            if not ProcessSpawner.is_task_alive(runtime_task):
+                return True
+
+        if get_children_pids(runtime_task.spawner_handle.process.pid):
+            return False
+
+        return True
 
     @staticmethod
     async def check_task_requirements(runtime_task):

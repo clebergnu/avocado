@@ -1,5 +1,6 @@
 import multiprocessing
 import os
+import signal
 import shutil
 import subprocess
 import sys
@@ -212,6 +213,9 @@ class RunnerApp(BaseRunnerApp):
 
 
 def main():
+    #signal.signal(signal.SIGTERM, signal.SIG_IGN)
+    #signal.signal(signal.SIGINT, signal.SIG_IGN)
+
     if sys.platform == "darwin":
         multiprocessing.set_start_method("fork")
     app = RunnerApp(print)

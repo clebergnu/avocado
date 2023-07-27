@@ -449,7 +449,7 @@ class Worker:
 
     async def _terminate_task(self, runtime_task, task_status):
         runtime_task.status = task_status
-        await self._spawner.terminate_task(runtime_task)
+        return await self._spawner.terminate_task(runtime_task)
 
     async def _terminate_tasks(self, task_status):
         await self._state_machine.abort(task_status)
@@ -458,7 +458,11 @@ class Worker:
             async with self._state_machine.lock:
                 try:
                     runtime_task = self._state_machine.monitored.pop(0)
-                    await self._terminate_task(runtime_task, task_status)
+                    actual_terminated = await self._terminate_task(runtime_task, task_status)
+                    if not actual_terminated:
+                        # A task was not actually terminted, but we've done our best.
+                        # How to handle it?
+                        LOG.error("Failed to fully terminate task: %s", runtime_task)
                     terminated.append(runtime_task)
                 except IndexError:
                     if (
