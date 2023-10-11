@@ -5,8 +5,7 @@ import logging
 import os
 import shlex
 
-from aexpect import exceptions
-from aexpect import remote
+from aexpect import exceptions, remote
 
 from avocado.core.plugin_interfaces import Init, Spawner
 from avocado.core.settings import settings
@@ -74,7 +73,7 @@ class RemoteSpawner(Spawner, SpawnerMixin):
         except exceptions.ShellTimeoutError:
             status, output = 2, f"Remote command timeout of {timeout} reached"
         except exceptions.ShellProcessTerminatedError:
-            status, output = 2, f"Remote command terminated prematurely"
+            status, output = 2, "Remote command terminated prematurely"
         return status, output
 
     @contextlib.contextmanager
@@ -96,7 +95,7 @@ class RemoteSpawner(Spawner, SpawnerMixin):
             for session_slot in self.config.get("spawner.remote.slots"):
                 if not session_slot:
                     continue
-                with open(session_slot, "r") as f:
+                with open(session_slot, "r", encoding="utf-8") as f:
                     session_data = json.load(f)
                 session = remote.remote_login(**session_data)
                 RemoteSpawner.slots_cache[session] = False
@@ -135,6 +134,8 @@ class RemoteSpawner(Spawner, SpawnerMixin):
         return False
         # TODO: create second session to properly check this? why is the first
         # one always ending with empty output?
+        # Until this gets solved, lint needs to be silenced:
+        # pylint: disable=W0101
         try:
             out = session.read_up_to_prompt(timeout=1.0)
             LOG.critical(f"Alive output: {out} with task {runtime_task}")
@@ -143,8 +144,8 @@ class RemoteSpawner(Spawner, SpawnerMixin):
             LOG.critical(f"Alive error: {error} with task {runtime_task}")
             return False
         # TODO: consider a secondary session as an alternative?
-        #status, _ = session.cmd_status_output("pgrep -r R,S -f task-run")
-        #return status == 0
+        # status, _ = session.cmd_status_output("pgrep -r R,S -f task-run")
+        # return status == 0
 
     @with_slot_reservation
     async def spawn_task(self, runtime_task):
@@ -168,7 +169,9 @@ class RemoteSpawner(Spawner, SpawnerMixin):
         setup_hook = self.config.get("spawner.remote.setup_hook")
         # Customize and deploy test data to the container
         if setup_hook:
-            status, output = await RemoteSpawner.run_remote_cmd_async(session, setup_hook)
+            status, output = await RemoteSpawner.run_remote_cmd_async(
+                session, setup_hook
+            )
             LOG.debug(f"Customization command exited with code {status}")
             if status != 0:
                 LOG.error(
@@ -184,7 +187,7 @@ class RemoteSpawner(Spawner, SpawnerMixin):
             LOG.error(
                 f"Error exit code {status} on {session.host}:{session.port} "
                 f"with output:\n{output}"
-                )
+            )
             return False
 
         return True
@@ -204,7 +207,7 @@ class RemoteSpawner(Spawner, SpawnerMixin):
 
     async def terminate_task(self, runtime_task):
         session = runtime_task.spawner_handle
-        session.sendcontrol('c')
+        session.sendcontrol("c")
         try:
             session.read_up_to_prompt()
             return True
@@ -212,8 +215,8 @@ class RemoteSpawner(Spawner, SpawnerMixin):
             LOG.error("Failed to terminate task on {session.host}")
             return False
         # TODO: consider a secondary session as an alternative?
-        #status, _ = session.cmd_status_output("pkill -f task-run")
-        #if status != 0:
+        # status, _ = session.cmd_status_output("pkill -f task-run")
+        # if status != 0:
         #    LOG.error("Failed to terminate task on {session.host}")
         #    return False
 
