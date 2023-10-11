@@ -161,7 +161,7 @@ class RemoteSpawner(Spawner, SpawnerMixin):
                 )
                 return False
 
-        status, output = await RemoteSpawner.run_remote_cmd_async(session, shlex.join(entry_point_args), 3600)
+        status, output = await RemoteSpawner.run_remote_cmd_async(session, shlex.join(entry_point_args), 14400)
         LOG.debug(f"Command exited with code {status}")
         if status != 0:
             LOG.error(
