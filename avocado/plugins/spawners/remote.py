@@ -12,7 +12,7 @@ from avocado.core.plugin_interfaces import Init, Spawner
 from avocado.core.settings import settings
 from avocado.core.spawners.common import SpawnerMixin, SpawnMethod
 
-LOG = logging.getLogger(__name__)
+LOG = logging.getLogger("avocado.job." + __name__)
 
 
 class RemoteSpawnerException(Exception):
@@ -128,10 +128,19 @@ class RemoteSpawner(Spawner, SpawnerMixin):
 
         session = runtime_task.spawner_handle
 
+        # TODO: it seems we always call this once right at the end of each
+        # test (using other methods to detect running test) and when doing
+        # this always end up with "" output and timeout error, slowing the
+        # run down and leading to task not being alive without fatal problems
+        return False
+        # TODO: create second session to properly check this? why is the first
+        # one always ending with empty output?
         try:
-            session.read_up_to_prompt(timeout=1.0)
+            out = session.read_up_to_prompt(timeout=1.0)
+            LOG.critical(f"Alive output: {out} with task {runtime_task}")
             return True
-        except exceptions.ExpectTimeoutError:
+        except exceptions.ExpectTimeoutError as error:
+            LOG.critical(f"Alive error: {error} with task {runtime_task}")
             return False
         # TODO: consider a secondary session as an alternative?
         #status, _ = session.cmd_status_output("pgrep -r R,S -f task-run")
