@@ -5,6 +5,7 @@ import logging
 import os
 import shlex
 
+from aexpect import exceptions
 from aexpect import remote
 
 from avocado.core.plugin_interfaces import Init, Spawner
@@ -127,8 +128,14 @@ class RemoteSpawner(Spawner, SpawnerMixin):
 
         session = runtime_task.spawner_handle
 
-        status, _ = session.cmd_status_output("pgrep -r R,S -f task-run")
-        return status == 0
+        try:
+            session.read_up_to_prompt(timeout=1.0)
+            return True
+        except exceptions.ExpectTimeoutError:
+            return False
+        # TODO: consider a secondary session as an alternative?
+        #status, _ = session.cmd_status_output("pgrep -r R,S -f task-run")
+        #return status == 0
 
     @with_slot_reservation
     async def spawn_task(self, runtime_task):
@@ -188,10 +195,18 @@ class RemoteSpawner(Spawner, SpawnerMixin):
 
     async def terminate_task(self, runtime_task):
         session = runtime_task.spawner_handle
-        status, _ = session.cmd_status_output("pkill -f task-run")
-        if status != 0:
-            LOG.error("Failed to terminate task on {host}")
+        session.sendcontrol('c')
+        try:
+            session.read_up_to_prompt()
+            return True
+        except exceptions.ExpectTimeoutError:
+            LOG.error("Failed to terminate task on {session.host}")
             return False
+        # TODO: consider a secondary session as an alternative?
+        #status, _ = session.cmd_status_output("pkill -f task-run")
+        #if status != 0:
+        #    LOG.error("Failed to terminate task on {session.host}")
+        #    return False
 
     @staticmethod
     async def check_task_requirements(runtime_task):
