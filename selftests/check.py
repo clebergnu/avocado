@@ -652,6 +652,7 @@ def create_suites(args):  # pylint: disable=W0621
             {"spawner": "process"},
             {"spawner": "podman"},
             {"spawner": "lxc"},
+            {"spawner": "remote"},
         ],
     }
 
