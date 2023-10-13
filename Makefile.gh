@@ -71,7 +71,7 @@ build-wheel: pip
 	done
 	ls
 	ls PYPI_UPLOAD
-	twine check ./PYPI_UPLOAD/*.{tar.gz,whl}
+	twine check ./PYPI_UPLOAD/*
 
 build-egg:
 	if test ! -d EGG_UPLOAD; then mkdir EGG_UPLOAD; fi
