@@ -18,12 +18,18 @@ import os
 import shutil
 import sys
 from abc import abstractmethod
-from distutils.command.clean import clean  # pylint: disable=W0402
 from pathlib import Path
 from subprocess import CalledProcessError, run
 
 import setuptools.command.develop
 from setuptools import Command, find_packages, setup
+
+try:
+    from distutils.command.clean import clean  # pylint: disable=W0402
+
+    HAS_DISTUTILS = True
+except ImportError:
+    HAS_DISTUTILS = False
 
 # pylint: disable=E0611
 
@@ -50,45 +56,6 @@ def walk_plugins_setup_py(action, action_name=None, directory=OPTIONAL_PLUGINS_P
         parent_dir = plugin.parent
         print(f">> {action_name} {parent_dir}")
         run([sys.executable, "setup.py"] + action, cwd=parent_dir, check=True)
-
-
-class Clean(clean):
-    """Our custom command to get rid of junk files after build."""
-
-    description = "Get rid of scratch, byte files and build stuff."
-
-    def run(self):
-        super().run()
-        cleaning_list = [
-            "PYPI_UPLOAD",
-            "EGG_UPLOAD",
-            "./build",
-            "./dist",
-            "./man/avocado.1",
-            "./docs/build",
-        ]
-
-        cleaning_list += list(Path("/tmp/").glob(".avocado-*"))
-        cleaning_list += list(Path("/var/tmp/").glob(".avocado-*"))
-        cleaning_list += list(Path(".").rglob("*.egg-info"))
-        cleaning_list += list(Path(".").rglob("*.pyc"))
-        cleaning_list += list(Path(".").rglob("__pycache__"))
-        cleaning_list += list(Path("./docs/source/api/").rglob("*.rst"))
-
-        for e in cleaning_list:
-            if not os.path.exists(e):
-                continue
-            if os.path.isfile(e):
-                os.remove(e)
-            if os.path.isdir(e):
-                shutil.rmtree(e)
-
-        self.clean_optional_plugins()
-
-    @staticmethod
-    def clean_optional_plugins():
-        walk_plugins_setup_py(["clean", "--all"], directory=OPTIONAL_PLUGINS_PATH)
-        walk_plugins_setup_py(["clean", "--all"], directory=EXAMPLES_PLUGINS_TESTS_PATH)
 
 
 class Develop(setuptools.command.develop.develop):
@@ -210,6 +177,68 @@ class SimpleCommand(Command):
 
     def finalize_options(self):
         """Post-process options."""
+
+
+if HAS_DISTUTILS:
+
+    class Clean(clean):
+        """Our custom command to get rid of junk files after build."""
+
+        description = "Get rid of scratch, byte files and build stuff."
+
+        def run(self):
+            super().run()
+            cleaning_list = [
+                "PYPI_UPLOAD",
+                "EGG_UPLOAD",
+                "./build",
+                "./dist",
+                "./man/avocado.1",
+                "./docs/build",
+            ]
+
+            cleaning_list += list(Path("/tmp/").glob(".avocado-*"))
+            cleaning_list += list(Path("/var/tmp/").glob(".avocado-*"))
+            cleaning_list += list(Path(".").rglob("*.egg-info"))
+            cleaning_list += list(Path(".").rglob("*.pyc"))
+            cleaning_list += list(Path(".").rglob("__pycache__"))
+            cleaning_list += list(Path("./docs/source/api/").rglob("*.rst"))
+
+            for e in cleaning_list:
+                if not os.path.exists(e):
+                    continue
+                if os.path.isfile(e):
+                    os.remove(e)
+                if os.path.isdir(e):
+                    shutil.rmtree(e)
+
+            self.clean_optional_plugins()
+
+        @staticmethod
+        def clean_optional_plugins():
+            walk_plugins_setup_py(["clean", "--all"], directory=OPTIONAL_PLUGINS_PATH)
+            walk_plugins_setup_py(
+                ["clean", "--all"], directory=EXAMPLES_PLUGINS_TESTS_PATH
+            )
+
+else:
+
+    class Clean(SimpleCommand):
+
+        description = "No-op for systems without distutils (Python 3.12 and later)"
+
+        user_options = [
+            ("all", None, "Compatibility for distutils' option of same name"),
+        ]
+
+        boolean_options = ["all"]
+
+        def initialize_options(self):
+            self.all = False  # pylint: disable=W0201
+
+        def run(self):
+            print("This command does nothing on Python 3.12 and later")
+            sys.exit()
 
 
 class Linter(SimpleCommand):
@@ -354,6 +383,7 @@ if __name__ == "__main__":
             "Programming Language :: Python :: 3.9",
             "Programming Language :: Python :: 3.10",
             "Programming Language :: Python :: 3.11",
+            "Programming Language :: Python :: 3.12",
         ],
         packages=find_packages(exclude=("selftests*",)),
         include_package_data=True,
