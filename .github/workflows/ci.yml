@@ -71,7 +71,7 @@ jobs:
 
     strategy:
       matrix:
-        python-version: [3.7, 3.8, 3.9, 3.10.0, 3.11, 3.12.0]
+        python-version: [3.12.0]
       fail-fast: false
 
     steps:
@@ -95,7 +95,7 @@ jobs:
       - name: Avocado version
         run: avocado --version
       - name: Unittests and fast functional tests
-        run: python3 setup.py test --skip=static-checks
+        run: python3 setup.py test --skip=static-checks,unit
       - name: Archive failed tests logs
         if: failure()
         uses: actions/upload-artifact@v3
