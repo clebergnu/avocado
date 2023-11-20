@@ -169,6 +169,10 @@ class Cpu(Test):
                 "avocado.utils.cpu.get_version", return_value="8561"
             ):
                 self.assertEqual(cpu.get_family(), "z15")
+            with unittest.mock.patch(
+                "avocado.utils.cpu.get_version", return_value="3931"
+            ):
+                self.assertEqual(cpu.get_family(), "z16")
 
     def test_intel_get_family(self):
         with unittest.mock.patch("avocado.utils.cpu.get_arch", return_value="x86_64"):
