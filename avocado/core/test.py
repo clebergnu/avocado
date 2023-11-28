@@ -63,6 +63,7 @@ TEST_STATE_ATTRIBUTES = (
     "traceback",
     "tags",
     "timeout",
+    "actual_timeout",
     "whiteboard",
     "phase",
 )
@@ -244,6 +245,9 @@ class Test(unittest.TestCase, TestData):
     actual_time_end = -1
     #: Test timeout (the timeout from params takes precedence)
     timeout = None
+    #: Test timeout factor (a multiplier for the timeout given in timeout).
+    #: Must be a float, and defaults to 1.0
+    timeout_factor = 1.0
 
     def __init__(
         self,
@@ -319,6 +323,7 @@ class Test(unittest.TestCase, TestData):
             params, paths = params[0], params[1]
         self.__params = parameters.AvocadoParams(params, paths, self.__log.name)
         self.timeout = self.params.get("timeout", default=self.timeout)
+        self.timeout_factor = float(self.params.get("timeout_factor", default=self.timeout_factor))
 
         self.__status = None
         self.__fail_reason = None
@@ -346,6 +351,7 @@ class Test(unittest.TestCase, TestData):
             pass
         else:
             self.log.debug("  teststmpdir: %s", teststmpdir)
+        self.log.debug("  actual timeout: %s", self.actual_timeout)
 
         unittest.TestCase.__init__(self, methodName=methodName)
         TestData.__init__(self)
@@ -529,6 +535,13 @@ class Test(unittest.TestCase, TestData):
         Possible (string) values are: INIT, SETUP, TEST, TEARDOWN and FINISHED
         """
         return self.__phase
+
+    @property
+    def actual_timeout(self):
+        """The timeout multiplied by the timeout factor"""
+        if self.timeout is None:
+            return float("inf")
+        return float(self.timeout) * self.timeout_factor
 
     def __str__(self):
         return str(self.name)

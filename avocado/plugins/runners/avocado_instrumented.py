@@ -153,7 +153,9 @@ class AvocadoInstrumentedTestRunner(BaseRunner):
             else:
                 message = queue.get()
                 if message.get("type") == "early_state":
-                    timeout = float(message.get("timeout") or float("inf"))
+                    timeout = float(message.get("actual_timeout")) or float(
+                        message.get("timeout") or float("inf")
+                    )
                 else:
                     yield message
                 if message.get("status") == "finished":
