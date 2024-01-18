@@ -299,6 +299,8 @@ jobs:
                     "debian:11.0",
                     "ubuntu:21.10",
                     "ubuntu:20.04"]
+    container:
+      image: ${{ matrix.container }}
     steps:
       - name: Check out repository code
         uses: actions/checkout@v3
@@ -332,6 +334,8 @@ jobs:
                     "debian:11.0",
                     "ubuntu:21.10",
                     "ubuntu:20.04"]
+    container:
+      image: ${{ matrix.container }}
     steps:
       - name: Check out repository code
         uses: actions/checkout@v3
