@@ -303,16 +303,20 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@v3
       - name: Install and run avocado --version
+        shell: bash
         run: |
-         if ! command -v dnf &> /dev/null
-         then
-           python3 -c 'import setuptools' || dnf -y install python3 python3-setuptools
+         if python3 -c "import setuptools"; then
+             echo "Python3 and setuptools already installed"
          else
-           python3 --version || (apt update && apt -y install python3 python3-setuptools ca-certificates)
+             if dnf --version; then
+                dnf -y install python3 python3-setuptools
+             elif apt --version; then
+                apt -y update
+                apt -y install python3 python3-setuptools ca-certificates
+             fi
          fi
          python3 setup.py develop --user
          python3 -m avocado --version
-
 
   egg_task:
 
@@ -332,19 +336,24 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@v3
       - name: Test running avocado from eggs
+        shell: bash
         run: |
-         if ! command -v dnf &> /dev/null
-         then
-           python3 -c 'import setuptools' || dnf -y install python3 python3-setuptools
+         if python3 -c "import setuptools"; then
+             echo "Python3 and setuptools already installed"
          else
-           python3 --version || (apt update && apt -y install python3 python3-setuptools)
+             if dnf --version; then
+                dnf -y install python3 python3-setuptools
+             elif apt --version; then
+                apt -y update
+                apt -y install python3 python3-setuptools ca-certificates
+             fi
          fi
-         python3 setup.py bdist_egg
-         mv dist/avocado_framework-*egg /tmp
-         python3 setup.py clean --all
-         python3 -c 'import sys; import glob; sys.path.insert(0, glob.glob("/tmp/avocado_framework-*.egg")[0]); from avocado.core.main import main; sys.exit(main())' run /bin/true
-         cd /tmp
-         python3 -c 'import sys; from pkg_resources import require; require("avocado-framework"); from avocado.core.main import main; sys.exit(main())' run /bin/true
+        python3 setup.py bdist_egg
+        mv dist/avocado_framework-*egg /tmp
+        python3 setup.py clean --all
+        python3 -c 'import sys; import glob; sys.path.insert(0, glob.glob("/tmp/avocado_framework-*.egg")[0]); from avocado.core.main import main; sys.exit(main())' run /bin/true
+        cd /tmp
+        python3 -c 'import sys; from pkg_resources import require; require("avocado-framework"); from avocado.core.main import main; sys.exit(main())' run /bin/true
 
 
   podman_egg_task:
