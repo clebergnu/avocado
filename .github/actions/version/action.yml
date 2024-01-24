@@ -4,6 +4,7 @@ runs:
   using: composite
   steps:
     - name: Install and run avocado --version
+      shell: sh
       run: |
         python3 setup.py develop --user
         python3 -m avocado --version

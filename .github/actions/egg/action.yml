@@ -4,6 +4,7 @@ runs:
   using: composite
   steps:
     - name: Test running avocado from eggs
+      shell: sh
       run: |
        python3 setup.py bdist_egg
        mv dist/avocado_framework-*egg /tmp
