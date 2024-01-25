@@ -1,8 +1,8 @@
+import importlib.metadata
 import os
 import unittest
 
 import avocado_robot.robot
-import pkg_resources
 
 from avocado.core.resolver import ReferenceResolutionResult
 
@@ -17,9 +17,9 @@ def python_module_available(module_name):
     :rtype: bool
     """
     try:
-        pkg_resources.require(module_name)
+        _ = importlib.metadata.version(module_name)
         return True
-    except pkg_resources.DistributionNotFound:
+    except importlib.metadata.PackageNotFoundError:
         return False
 
 

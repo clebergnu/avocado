@@ -5,11 +5,10 @@ import logging
 import subprocess
 import sys
 
-import pkg_resources
-
 from avocado.core.nrunner.config import ConfigDecoder, ConfigEncoder
 from avocado.core.settings import settings
 from avocado.core.utils.eggenv import get_python_path_env_if_egg
+from avocado.utils.python import importlibmetadata
 
 LOG = logging.getLogger(__name__)
 
@@ -496,8 +495,8 @@ class Runnable:
         :returns: a module that can be run with "python -m" or None"""
         namespace = "console_scripts"
         section = f"avocado-runner-{kind}"
-        for ep in pkg_resources.iter_entry_points(namespace, section):
-            return ep.module_name
+        for ep in importlibmetadata.entry_points(namespace, section):
+            return importlibmetadata.get_entry_point_module(ep)
 
     @staticmethod
     def pick_runner_class_from_entry_point_kind(kind):
@@ -510,7 +509,7 @@ class Runnable:
         :returns: a class that inherits from :class:`BaseRunner` or None
         """
         namespace = "avocado.plugins.runnable.runner"
-        for ep in pkg_resources.iter_entry_points(namespace, kind):
+        for ep in importlibmetadata.entry_points(namespace, kind):
             try:
                 obj = ep.load()
                 return obj

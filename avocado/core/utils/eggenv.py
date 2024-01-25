@@ -1,6 +1,6 @@
+import importlib.metadata
 import os
-
-import pkg_resources
+import pathlib
 
 
 def get_python_path_env_if_egg():
@@ -16,15 +16,16 @@ def get_python_path_env_if_egg():
     :returns: environment mapping with an extra PYTHONPATH for the egg or None
     :rtype: os.environ mapping or None
     """
-    dist = pkg_resources.get_distribution("avocado-framework")
-    if not (dist.location.endswith(".egg") and os.path.isfile(dist.location)):
+    dist = importlib.metadata.distribution("avocado-framework")
+    path = dist.locate_file("")
+    if isinstance(path, pathlib.Path):
         return None
 
     python_path = os.environ.get("PYTHONPATH", "")
     python_path_entries = python_path.split(":")
-    if dist.location in python_path_entries:
+    if path.root.filename in python_path_entries:
         return None
 
     env = os.environ.copy()
-    env["PYTHONPATH"] = f"{dist.location}:{python_path}"
+    env["PYTHONPATH"] = f"{path.root.filename}:{python_path}"
     return env

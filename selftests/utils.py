@@ -1,10 +1,10 @@
+import importlib.metadata
 import logging
 import os
 import sys
 import tempfile
 import unittest
 
-import pkg_resources
 
 #: The base directory for the avocado source tree
 BASEDIR = os.path.dirname(os.path.abspath(__file__))
@@ -24,9 +24,9 @@ def python_module_available(module_name):
     :rtype: bool
     """
     try:
-        pkg_resources.require(module_name)
+        _ = importlib.metadata.version(module_name)
         return True
-    except pkg_resources.DistributionNotFound:
+    except importlib.metadata.PackageNotFoundError:
         return False
 
 

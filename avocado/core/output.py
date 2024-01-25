@@ -26,6 +26,7 @@ from avocado.core import exit_codes
 from avocado.core.settings import settings
 from avocado.core.streams import BUILTIN_STREAMS
 from avocado.utils import path as utils_path
+from avocado.utils.python import importlibmetadata
 
 #: Handle cases of logging exceptions which will lead to recursion error
 logging.raiseExceptions = False
@@ -766,10 +767,11 @@ def log_plugin_failures(failures):
     config = settings.as_dict()
     silenced = config.get("plugins.skip_broken_plugin_notification")
     for failure in failures:
-        if failure[0].module_name in silenced:
+        module = importlibmetadata.get_entry_point_module(failure[0])
+        if module in silenced:
             continue
         if hasattr(failure[1], "__traceback__"):
             str_tb = "".join(traceback.format_tb(failure[1].__traceback__))
         else:
             str_tb = "Traceback not available"
-        LOG_UI.error(msg_fmt, failure[0].module_name, repr(failure[1]), str_tb)
+        LOG_UI.error(msg_fmt, module, repr(failure[1]), str_tb)

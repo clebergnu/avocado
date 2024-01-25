@@ -13,9 +13,8 @@
 # Author: Lucas Meneghel Rodrigues <lmr@redhat.com>
 
 
+import importlib.metadata
 import os
-
-import pkg_resources
 
 from avocado.core.dispatcher import InitDispatcher
 from avocado.core.settings import settings as stgs
@@ -269,8 +268,14 @@ def initialize_plugin_infrastructure():
         section="plugins", key="disable", key_type=list, default=[], help_msg=help_msg
     )
 
-    kinds = list(pkg_resources.get_entry_map("avocado-framework").keys())
-    plugin_types = [kind[8:] for kind in kinds if kind.startswith("avocado.plugins.")]
+    dist = importlib.metadata.distribution("avocado-framework")
+    plugin_types = set(
+        [
+            i.group[8:]
+            for i in dist.entry_points
+            if i.group.startswith("avocado.plugins.")
+        ]
+    )
     for plugin_type in plugin_types:
         help_msg = f'Execution order for "{plugin_type}" plugins'
         stgs.register_option(

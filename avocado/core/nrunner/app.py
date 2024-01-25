@@ -5,10 +5,9 @@ import os
 import re
 import sys
 
-import pkg_resources
-
 from avocado.core.nrunner.runnable import Runnable
 from avocado.core.nrunner.task import TASK_DEFAULT_CATEGORY, Task
+from avocado.utils.python import importlibmetadata
 
 
 def _get_kind_options_from_executable_name():
@@ -227,7 +226,7 @@ class BaseRunnerApp:
         """
         config_used = []
         for kind in self.RUNNABLE_KINDS_CAPABLE:
-            for ep in pkg_resources.iter_entry_points(
+            for ep in importlibmetadata.entry_points(
                 "avocado.plugins.runnable.runner", kind
             ):
                 try:

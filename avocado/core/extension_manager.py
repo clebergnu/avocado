@@ -24,9 +24,8 @@ import enum
 import logging
 import sys
 
-import pkg_resources
-
 from avocado.utils import stacktrace
+from avocado.utils.python import importlibmetadata
 
 # This is also defined in avocado.core.output, but this avoids a
 # circular import
@@ -89,7 +88,7 @@ class ExtensionManager:
             invoke_kwds = {}
 
         # load plugins
-        for ep in pkg_resources.iter_entry_points(self.namespace):
+        for ep in importlibmetadata.entry_points(self.namespace):
             try:
                 plugin = ep.load()
                 obj = plugin(**invoke_kwds)

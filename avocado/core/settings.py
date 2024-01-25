@@ -39,11 +39,10 @@ options from many sources, in the following order:
 import ast
 import configparser
 import glob
+import importlib.resources
 import json
 import os
 import re
-
-from pkg_resources import resource_exists, resource_filename
 
 from avocado.core.settings_dispatcher import SettingsDispatcher
 
@@ -414,8 +413,10 @@ class Settings:
 
         config_file_name = "avocado.conf"
         config_pkg_base = os.path.join("etc", "avocado", config_file_name)
-        if resource_exists("avocado", config_pkg_base):
-            self._config_path_pkg = resource_filename("avocado", config_pkg_base)
+        avocado_files = importlib.resources.files("avocado")
+        cfg = avocado_files.joinpath("etc").joinpath("avocado").joinpath("avocado.conf")
+        if cfg.is_file():
+            self._config_path_pkg = cfg
         else:
             self._config_path_pkg = None
         self._config_dir_system = os.path.join(cfg_dir, "avocado")
