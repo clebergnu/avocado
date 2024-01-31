@@ -1,6 +1,6 @@
-import asyncio
 import os
 import sys
+import time
 import unittest
 
 from avocado.core.job import Job
@@ -266,22 +266,23 @@ class TaskRun(unittest.TestCase):
         self.assertEqual(res.exit_status, 0)
 
 
-class TaskRunStatusService(TestCaseTmpDir, unittest.IsolatedAsyncioTestCase):
+class TaskRunStatusService(TestCaseTmpDir):
     @skipUnlessPathExists("/bin/sleep")
     @skipUnlessPathExists("/bin/nc")
-    async def test_task_status_service_lost(self):
+    def test_task_status_service_lost(self):
         nc_path = os.path.join(self.tmpdir.name, "socket")
-        nc_proc = await asyncio.create_subprocess_shell(f"nc -lU {nc_path}")
-        await asyncio.sleep(1)
-        task_proc = await asyncio.create_subprocess_shell(
-            f"avocado-runner-exec-test task-run -i 1 -u /bin/sleep -a 3 -s {nc_path}",
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
+        nc_proc = process.SubProcess(f"nc -lU {nc_path}")
+        nc_proc.start()
+        task_proc = process.SubProcess(
+            f"avocado-runner-exec-test task-run -i 1 -u /bin/sleep -a 3 -s {nc_path}"
         )
-        await asyncio.sleep(1)
+        task_proc.start()
+        time.sleep(1)
         nc_proc.kill()
-        _, stderr = await task_proc.communicate()
-        self.assertIn(f"Connection with {nc_path} has been lost.".encode(), stderr)
+        task_proc.wait(10)
+        self.assertIn(
+            f"Connection with {nc_path} has been lost.".encode(), task_proc.get_stderr()
+        )
 
 
 class ResolveSerializeRun(TestCaseTmpDir):
