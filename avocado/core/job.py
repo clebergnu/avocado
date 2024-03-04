@@ -44,9 +44,11 @@ from avocado.core.job_id import create_unique_job_id
 from avocado.core.output import LOG_JOB, LOG_UI, split_loggers_and_levels
 from avocado.core.settings import settings
 from avocado.core.suite import TestSuite, TestSuiteError
+from avocado.core.test_id import TestID
 from avocado.core.utils.version import get_avocado_git_version
 from avocado.utils import astring
 from avocado.utils.data_structures import CallbackRegister, time_to_seconds
+from avocado.utils.path import init_dir
 
 _NEW_ISSUE_LINK = "https://github.com/avocado-framework/avocado/issues/new"
 
@@ -427,6 +429,19 @@ class Job:
             if os.path.exists(proc_latest):
                 os.unlink(proc_latest)
 
+    def _save_runnables_recipes(self):
+        base_dir = init_dir(self.logdir, jobdata.JOB_DATA_DIR, "runnables")
+        for test_suite in self.test_suites:
+            no_digits = len(str(len(test_suite.tests)))
+            for index, runnable in enumerate(test_suite.tests, start=1):
+                if test_suite.name:
+                    prefix = f"{test_suite.name}-{index}"
+                else:
+                    prefix = index
+                test_id = TestID(prefix, runnable.identifier, runnable.variant, no_digits)
+                json_path = os.path.join(base_dir, f"{test_id.str_filesystem}.json")
+                runnable.write_json(json_path)
+
     @classmethod
     def from_config(cls, job_config, suites_configs=None):
         """Helper method to create a job from config dicts.
@@ -593,6 +608,7 @@ class Job:
             self._time_start = time.monotonic()
         try:
             self.result.tests_total = self.size
+            self._save_runnables_recipes()
             pre_post_dispatcher = dispatcher.JobPrePostDispatcher()
             output.log_plugin_failures(pre_post_dispatcher.load_failures)
             pre_post_dispatcher.map_method("pre", self)
