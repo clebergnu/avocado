@@ -188,11 +188,14 @@ class Runnable:
     def from_args(cls, args):
         """Returns a runnable from arguments"""
         decoded_args = [_arg_decode_base64(arg) for arg in args.get("arg", ())]
+        config = args.get("config", None)
+        if not isinstance(config, dict):
+            config = json.loads(config, cls=ConfigDecoder)
         return cls.from_avocado_config(
             args.get("kind"),
             args.get("uri"),
             *decoded_args,
-            config=json.loads(args.get("config", "{}"), cls=ConfigDecoder),
+            config=config,
             **_key_val_args_to_kwargs(args.get("kwargs", [])),
         )
 

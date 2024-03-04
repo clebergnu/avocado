@@ -16,6 +16,7 @@
 Test resolver for builtin test types
 """
 
+import json
 import os
 import re
 
@@ -159,7 +160,14 @@ class RunnableRecipeResolver(Resolver):
         if criteria_check is not True:
             return criteria_check
 
-        runnable = Runnable.from_recipe(reference)
+        runnables = []
+        if os.path.basename(reference) == "runnables.json":
+            recipes = json.load(open(reference))
+            for recipe in recipes:
+                runnables.append(Runnable.from_args(recipe))
+        else:
+            runnables.append(Runnable.from_recipe(reference))
+
         return ReferenceResolution(
-            reference, ReferenceResolutionResult.SUCCESS, [runnable]
+            reference, ReferenceResolutionResult.SUCCESS, runnables
         )

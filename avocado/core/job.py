@@ -19,6 +19,7 @@ Job module - describes a sequence of automated test operations.
 
 
 import datetime
+import json
 import logging
 import os
 import pprint
@@ -431,6 +432,7 @@ class Job:
 
     def _save_runnables_recipes(self):
         base_dir = init_dir(self.logdir, jobdata.JOB_DATA_DIR, "runnables")
+        runnables = []
         for test_suite in self.test_suites:
             no_digits = len(str(len(test_suite.tests)))
             for index, runnable in enumerate(test_suite.tests, start=1):
@@ -440,7 +442,9 @@ class Job:
                     prefix = index
                 test_id = TestID(prefix, runnable.identifier, runnable.variant, no_digits)
                 json_path = os.path.join(base_dir, f"{test_id.str_filesystem}.json")
+                runnables.append(runnable.get_dict())
                 runnable.write_json(json_path)
+        json.dump(runnables, open(os.path.join(self.logdir, jobdata.JOB_DATA_DIR, "runnables.json"), "w"))
 
     @classmethod
     def from_config(cls, job_config, suites_configs=None):
