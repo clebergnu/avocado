@@ -3,10 +3,12 @@ import json
 import logging
 import os
 import re
+import shlex
 import subprocess
 import time
 import uuid
 
+from avocado.core import bootstrap
 from avocado.core.dependencies.requirements import cache
 from avocado.core.plugin_interfaces import CLI, DeploymentSpawner, Init
 from avocado.core.resolver import ReferenceResolutionAssetType
@@ -16,9 +18,30 @@ from avocado.core.teststatus import STATUSES_NOT_OK
 from avocado.core.version import VERSION
 from avocado.utils import distro
 from avocado.utils.asset import Asset
-from avocado.utils.podman import AsyncPodman, PodmanException
+from avocado.utils.podman import AsyncPodman, Podman, PodmanException
 
 LOG = logging.getLogger(__name__)
+
+
+def podman_executor(environment, command):
+    """ """
+    pdm = Podman()
+    _, stdout, _ = pdm.execute("image", "inspect", environment)
+    image_info = json.loads(stdout)
+    assert len(image_info) == 1
+    default_image_cmd = image_info[0].get("Config", {}).get("Cmd")
+
+    cmd = json.dumps(shlex.split(command))
+    _, stdout, _ = pdm.execute("create", f"--entrypoint={cmd}", environment)
+
+    container_id = stdout.decode().strip()
+
+    pdm.start(container_id)
+    pdm.execute("attach", container_id)
+
+    _, stdout, _ = pdm.execute("commit", f"--change=CMD={default_image_cmd}", container_id)
+    image_id = stdout.decode().strip()
+    return image_id
 
 
 class PodmanSpawnerException(PodmanException):
@@ -123,9 +146,10 @@ class PodmanSpawner(DeploymentSpawner, SpawnerMixin):
 
     def __init__(self, config=None, job=None):  # pylint: disable=W0231
         SpawnerMixin.__init__(self, config, job)
-        self.environment = f"podman:{self.config.get('spawner.podman.image')}"
+        self._podman_image = self.config.get("spawner.podman.image")
         self._podman_version = (None, None, None)
         self._podman = None
+        self.environment = f"podman:{self._podman_image}"
 
     def _get_podman_version(self):
         podman_bin = self.config.get("spawner.podman.bin")
@@ -247,15 +271,14 @@ class PodmanSpawner(DeploymentSpawner, SpawnerMixin):
 
     @property
     async def python_version(self):
-        image = self.config.get("spawner.podman.image")
-        if image not in self._PYTHON_VERSIONS_CACHE:
+        if self._podman_image not in self._PYTHON_VERSIONS_CACHE:
             if not self.podman:
                 msg = "Cannot get Python version: self.podman not defined."
                 LOG.debug(msg)
                 return None, None, None
-            result = await self.podman.get_python_version(image)
-            self._PYTHON_VERSIONS_CACHE[image] = result
-        return self._PYTHON_VERSIONS_CACHE[image]
+            result = await self.podman.get_python_version(self._podman_image)
+            self._PYTHON_VERSIONS_CACHE[self._podman_image] = result
+        return self._PYTHON_VERSIONS_CACHE[self._podman_image]
 
     async def deploy_artifacts(self):
         pass
@@ -333,7 +356,7 @@ class PodmanSpawner(DeploymentSpawner, SpawnerMixin):
 
         image, _ = self._get_image_from_cache(runtime_task)
         if not image:
-            image = self.config.get("spawner.podman.image")
+            image = self._podman_image
 
         envs = [f"-e={k}={v}" for k, v in env_args.items()]
         # pylint: disable=W0201
@@ -351,7 +374,13 @@ class PodmanSpawner(DeploymentSpawner, SpawnerMixin):
     async def spawn_task(self, runtime_task):
         self.create_task_output_dir(runtime_task)
 
-        major, minor, _ = await self.python_version
+        try:
+            major, minor, _ = await self.python_version
+        except PodmanException as exc:
+            self._podman_image = bootstrap.bootstrap("python", self._podman_image,
+                                                     podman_executor)
+            major, minor, _ = await self.python_version
+
         # Return only the "to" location
         eggs = self.get_eggs_paths(major, minor)
         destination_eggs = ":".join(map(lambda egg: str(egg[1]), eggs))
