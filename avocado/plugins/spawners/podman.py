@@ -65,6 +65,18 @@ class PodmanSpawnerInit(Init):
             section=section, key="avocado_spawner_egg", help_msg=help_msg, default=None
         )
 
+        help_msg = (
+            "Prefix to use when tagging images that are created by the "
+            "Podman spawner."
+        )
+
+        settings.register_option(
+            section=section,
+            key="image_tag_prefix",
+            help_msg=help_msg,
+            default="avocado_generated",
+        )
+
 
 class PodmanCLI(CLI):
 
@@ -422,12 +434,21 @@ class PodmanSpawner(DeploymentSpawner, SpawnerMixin):
             "commit", "-q", runtime_task.spawner_handle
         )
         image_id = stdout.decode().strip()
+        tag_prefix = self.config.get("spawner.podman.image_tag_prefix")
+        base_image = self.config.get("spawner.podman.image")
+        kind = runtime_task.task.runnable.kind
+        name = runtime_task.task.runnable.kwargs.get("name")
+        tag = f"{tag_prefix}_{base_image}_{kind}_{name}".replace(":", "_")
+        try:
+            _, _, _ = await self.podman.execute("tag", image_id, tag)
+        except PodmanException as ex:
+            LOG.warning("Could not tag image %s with %s: %s", image_id, tag, ex)
         cache.update_environment(self.environment, environment_id, image_id)
         cache.update_requirement_status(
             self.environment,
             image_id,
-            runtime_task.task.runnable.kind,
-            runtime_task.task.runnable.kwargs.get("name"),
+            kind,
+            name,
             True,
         )
 
