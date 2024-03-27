@@ -1,0 +1,25 @@
+{
+    "version": "AVOCADO_SUITES_V1",
+    "suites": [
+        {
+            "name": "single",
+            "runnables": [
+                {
+                    "kind": "exec-test",
+                    "uri": "/bin/echo",
+                    "args": [
+                        "-n",
+                        "avocado"
+                    ]
+                },
+                {
+                    "kind": "noop"
+                },
+                {
+                    "kind": "python-unittest",
+                    "uri": "selftests/unit/test.py:TestClassTestUnit.test_long_name"
+                }
+            ]
+        }
+    ]
+}
