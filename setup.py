@@ -392,6 +392,7 @@ if __name__ == "__main__":
                 "jobscripts = avocado.plugins.jobscripts:JobScriptsInit",
                 "dict_variants = avocado.plugins.dict_variants:DictVariantsInit",
                 "json_variants = avocado.plugins.json_variants:JsonVariantsInit",
+                "loop_variants = avocado.plugins.loop_variants:LoopVariantsInit",
                 "run = avocado.plugins.run:RunInit",
                 "podman = avocado.plugins.spawners.podman:PodmanSpawnerInit",
                 "lxc = avocado.plugins.spawners.lxc:LXCSpawnerInit",
@@ -408,6 +409,7 @@ if __name__ == "__main__":
                 "tap = avocado.plugins.tap:TAP",
                 "zip_archive = avocado.plugins.archive:ArchiveCLI",
                 "json_variants = avocado.plugins.json_variants:JsonVariantsCLI",
+                "loop_variants = avocado.plugins.loop_variants:LoopVariantsCLI",
                 "nrunner = avocado.plugins.runner_nrunner:RunnerCLI",
                 "podman = avocado.plugins.spawners.podman:PodmanCLI",
             ],
@@ -460,6 +462,7 @@ if __name__ == "__main__":
             "avocado.plugins.varianter": [
                 "json_variants = avocado.plugins.json_variants:JsonVariants",
                 "dict_variants = avocado.plugins.dict_variants:DictVariants",
+                "loop_variants = avocado.plugins.loop_variants:LoopVariants",
             ],
             "avocado.plugins.resolver": [
                 "exec-test = avocado.plugins.resolvers:ExecTestResolver",
