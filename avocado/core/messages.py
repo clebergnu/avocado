@@ -337,6 +337,10 @@ class LogMessageHandler(BaseRunningMessageHandler):
     :param log_levelname: level of the logger, such as "INFO", required
                           if "log_name" is set
     :type log_levelname: string
+    :param log_level: numeric log level to be used as a fallback in cases
+                      where the log level name does not exist on the main
+                      Avocado side (and only on the avocado-runner-*' side.
+    :type log_level: int
 
     example: {'status': 'running', 'type': 'log', 'log': 'log message',
               'time': 18405.55351474}
@@ -371,7 +375,10 @@ class LogMessageHandler(BaseRunningMessageHandler):
             level = logging.getLevelName(message.get("log_levelname"))
             log_message = f"{task.identifier}: {message.get('log').decode(message.get('encoding'))}"
             logger_level = logger.level
-            logger.setLevel(level)
+            try:
+                logger.setLevel(level)
+            except ValueError:
+                logging.addLevelName(message.get("log_level"), message.get("log_levelname"))
             logger.log(level, log_message)
             logger.setLevel(logger_level)
 
