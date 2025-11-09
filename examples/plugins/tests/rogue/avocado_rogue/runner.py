@@ -1,4 +1,5 @@
 import signal
+import subprocess
 import time
 
 from avocado_rogue import MAGIC_WORD
@@ -17,7 +18,8 @@ class RogueRunner(BaseRunner):
 
      * uri: the rogue magic word (-*-*-magic-word-for-rogue-*-*-)
 
-     * args: not used;
+     * args: if a positional argument is given, it will be interpreted
+             as the number of rogue children processes to spawn
 
      * kwargs: not used;
 
@@ -37,6 +39,15 @@ class RogueRunner(BaseRunner):
             signal.signal(signal.SIGTERM, signal.SIG_IGN)
             signal.signal(signal.SIGQUIT, signal.SIG_IGN)
             signal.signal(signal.SIGTSTP, signal.SIG_IGN)
+            if runnable.args:
+                children = int(runnable.args[0])
+                for i in range(children):
+                    proc = subprocess.Popen(
+                        ["avocado-runner-rogue", "runnable-run", "-u", MAGIC_WORD],
+                        stdin=subprocess.DEVNULL,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                    )
             while True:
                 yield RunningMessage.get()
                 time.sleep(RUNNER_RUN_STATUS_INTERVAL)
