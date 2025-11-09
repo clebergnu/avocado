@@ -1,12 +1,15 @@
 import asyncio
 import os
+import signal
 import socket
+import time
 
 from avocado.core.dependencies.requirements import cache
 from avocado.core.plugin_interfaces import Spawner
 from avocado.core.spawners.common import SpawnCapabilities, SpawnerMixin, SpawnMethod
 from avocado.core.teststatus import STATUSES_NOT_OK
 from avocado.core.utils.eggenv import get_python_path_env_if_egg
+from avocado.utils.process import kill_process_tree
 
 ENVIRONMENT_TYPE = "local"
 ENVIRONMENT = socket.gethostname()
@@ -82,29 +85,47 @@ class ProcessSpawner(Spawner, SpawnerMixin):
         await runtime_task.spawner_handle.wait_task
 
     async def terminate_task(self, runtime_task):
-        try:
-            runtime_task.spawner_handle.process.terminate()
-        except ProcessLookupError:
-            return True
         soft_interval = self.config.get(
             "runner.task.interval.from_soft_to_hard_termination"
         )
+        terminate_time_start = time.monotonic()
+        try:
+            kill_process_tree(
+                runtime_task.spawner_handle.process.pid,
+                signal.SIGTERM,
+                False,
+                soft_interval,
+            )
+        except RuntimeError:
+            # at least one of the children have not been terminated,
+            # ignore as a harder try will be made next
+            pass
         returncode = None
         try:
             returncode = await asyncio.wait_for(
-                runtime_task.spawner_handle.process.wait(), soft_interval
+                runtime_task.spawner_handle.process.wait(),
+                soft_interval - (time.monotonic() - terminate_time_start),
             )
         except asyncio.TimeoutError:
-            try:
-                runtime_task.spawner_handle.process.kill()
-            except ProcessLookupError:
-                return True
             hard_interval = self.config.get(
                 "runner.task.interval.from_hard_termination_to_verification"
             )
+            kill_time_start = time.monotonic()
+            try:
+                kill_process_tree(
+                    runtime_task.spawner_handle.process.pid,
+                    signal.SIGKILL,
+                    False,
+                    hard_interval,
+                )
+            except RuntimeError:
+                # This is a best effort kill, and the real result will
+                # be given by the wait bellow
+                pass
             try:
                 returncode = await asyncio.wait_for(
-                    runtime_task.spawner_handle.process.wait(), hard_interval
+                    runtime_task.spawner_handle.process.wait(),
+                    hard_interval - (time.monotonic() - kill_time_start),
                 )
             except asyncio.TimeoutError:
                 pass

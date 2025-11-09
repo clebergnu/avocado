@@ -6,6 +6,14 @@ from avocado.core.job import Job
 from avocado.utils import process, script
 from selftests.utils import AVOCADO, TestCaseTmpDir, python_module_available
 
+try:
+    import psutil
+
+    PSUTIL_AVAILABLE = True
+except ImportError:
+    PSUTIL_AVAILABLE = False
+
+
 TEST_LOGDIR = """from avocado import Test
 
 
@@ -47,6 +55,8 @@ class ProcessSpawnerTest(TestCaseTmpDir):
         }
 
         with Job.from_config(job_config=config) as job:
+            if PSUTIL_AVAILABLE:
+                job.test_suites[0].tests[0].args = ["3"]
             job.run()
 
         self.assertEqual(1, job.result.interrupted)
@@ -61,3 +71,12 @@ class ProcessSpawnerTest(TestCaseTmpDir):
             self.assertIn(
                 'Could not terminate task "1-1-x-avocado-runner-rogue"', full_log.read()
             )
+
+        if PSUTIL_AVAILABLE:
+            for proc in psutil.process_iter(["cmdline"]):
+                if proc.cmdline():
+                    self.assertNotEqual(
+                        proc.cmdline()[-1],
+                        "x-avocado-runner-rogue",
+                        "A rogue process was found in the system",
+                    )
